@@ -13,7 +13,7 @@ while _G.cum do
     for i = 1, 2 do
         local args = {
             [1] = {
-                [1] = "+PP20"
+                [1] = "+PP19"
             }
         }
         game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
