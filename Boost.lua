@@ -1,34 +1,39 @@
 _G.cum = true
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RemoteEvent = ReplicatedStorage.RemoteEvent
+
+-- Initial setup for Psychic power
 local args = {
     [1] = {
         [1] = "Psychic",
         [2] = "Psychic3"
     }
 }
+RemoteEvent:FireServer(unpack(args))
 
-game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
-
+-- Main loop for power boosting
 while _G.cum do
-    -- PP20 için paket göndermeyi 5 kez hızlandırdım
-    for i = 1, 2 do
+    -- Send multiple commands per iteration for maximum speed
+    for i = 1, 5 do  -- Increased from 2 to 5 commands per loop
         local args = {
             [1] = {
                 [1] = "+PP19"
             }
         }
-        game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
+        RemoteEvent:FireServer(unpack(args))
     end
-
-    task.wait(0) -- Hız için bekleme yok
+    
+    -- No delay for maximum speed
+    task.wait(0)
 end
 
-if _G.cum == false then
-    -- Gereksiz kod kaldırıldı
+-- Cleanup when stopped
+if not _G.cum then
     local args = {
         [1] = {
             [1] = "",
             [2] = ""
         }
     }
-    game:GetService("ReplicatedStorage").RemoteEvent:FireServer(unpack(args))
+    RemoteEvent:FireServer(unpack(args))
 end
