@@ -14,7 +14,7 @@ RemoteEvent:FireServer(unpack(args))
 -- Main loop for power boosting
 while _G.cum do
     -- Send commands with optimized pattern
-    for i = 1, 15 do  -- Increased from 3 to 15 commands per loop
+    for i = 1, 30 do  -- Increased from 15 to 30 commands per loop
         local args = {
             [1] = {
                 [1] = "+PP19"
@@ -24,7 +24,7 @@ while _G.cum do
     end
     
     -- Minimal delay to maintain natural appearance
-    task.wait(0.005)  -- Reduced delay for faster operation
+    task.wait(0.001)  -- Reduced delay for faster operation
 end
 
 -- Cleanup when stopped
