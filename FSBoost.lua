@@ -13,8 +13,8 @@ RemoteEvent:FireServer(unpack(args))
 
 -- Main loop for strength boosting
 while _G.cum do
-    -- Send multiple commands per loop for maximum speed
-    for i = 1, 25 do  -- Sends 25 commands per loop
+    -- Send multiple commands per loop for moderate speed
+    for i = 1, 5 do  -- Sends 5 commands per loop
         local args = {
             [1] = {
                 [1] = "+FS20"
@@ -23,8 +23,8 @@ while _G.cum do
         RemoteEvent:FireServer(unpack(args))
     end
     
-    -- Minimal delay for maximum speed
-    task.wait(0.00001)  -- Almost instant delay
+    -- Moderate delay to prevent kicks
+    task.wait(0.1)  -- 100ms delay
 end
 
 -- Cleanup when stopped
