@@ -1187,7 +1187,7 @@
             wait(0.1) -- Keep normal tick rate for stability
             
             if AutoFarmBT then
-                for i = 1, 10000 do -- 10000x multiplier
+                for i = 1, 1000 do -- 1000x multiplier
                     local args = {
                         {
                             "+BT" .. BTLevel
@@ -1198,7 +1198,7 @@
             end
             
             if AutoFarmFS then
-                for i = 1, 10000 do -- 10000x multiplier
+                for i = 1, 1000 do -- 1000x multiplier
                     local args = {
                         {
                             "+FS" .. FSLevel
@@ -1209,7 +1209,7 @@
             end
             
             if AutoFarmPP then
-                for i = 1, 10000 do -- 10000x multiplier
+                for i = 1, 1000 do -- 1000x multiplier
                     local args = {
                         {
                             "+PP" .. PPLevel
@@ -1220,7 +1220,7 @@
             end
             
             if AutoFarmJF then
-                for i = 1, 10000 do -- 10000x multiplier
+                for i = 1, 1000 do -- 1000x multiplier
                     local args = {
                         {
                             "+JF" .. JFLevel
@@ -1231,7 +1231,7 @@
             end
             
             if AutoFarmMS then
-                for i = 1, 10000 do -- 10000x multiplier
+                for i = 1, 1000 do -- 1000x multiplier
                     local args = {
                         {
                             "+MS" .. MSLevel
