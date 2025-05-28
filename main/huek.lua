@@ -311,6 +311,12 @@
         Flag = "FSLevel",
         Callback = function(Options)
             FSLevel = tonumber(Options[1])
+            Rayfield:Notify({
+                Title = "FS Level Updated!",
+                Content = "FS Level set to " .. FSLevel,
+                Duration = 3,
+                Image = "zap",
+            })
         end,
     })
     
@@ -1445,13 +1451,14 @@
                         continue
                     end
                     
-                    -- Kill player
+                    -- Kill player immediately
                     pcall(function()
                         humanoid:TakeDamage(humanoid.MaxHealth)
                         humanoid.Health = 0
                     end)
                     
-                    wait(5) -- Kill every 5 seconds
+                    -- Wait exactly 5 seconds
+                    wait(5)
                 end
             end)
         else
