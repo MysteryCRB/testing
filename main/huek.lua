@@ -117,9 +117,9 @@
     end
     
     local Window = Rayfield:CreateWindow({
-        Name = "CRB Hub",
+        Name = "Unholy Hub",
         Icon = "shield-check",
-        LoadingTitle = "CRB Hub Loading...",
+        LoadingTitle = "Unholy Hub Loading...",
         LoadingSubtitle = "Loading...",
         Theme = TypeHubTheme,
         
@@ -130,15 +130,15 @@
         
         ConfigurationSaving = {
             Enabled = true,
-            FolderName = "CRBHub",
-            FileName = "CRBHub_Config"
+            FolderName = "UnholyHub",
+            FileName = "UnholyHub_Config"
         },
         
         KeySystem = false
     })
     
     Rayfield:Notify({
-        Title = "CRB Hub Authenticated!",
+        Title = "Unholy Hub Authenticated!",
         Content = "Welcome! Your session is secure and protected.",
         Duration = 5,
         Image = "shield-check",
@@ -146,11 +146,11 @@
     
     local DashboardTab = Window:CreateTab("Dashboard", "home")
     
-    local DashboardSection = DashboardTab:CreateSection("Welcome to CRB Hub")
+    local DashboardSection = DashboardTab:CreateSection("Welcome to Unholy Hub")
     
     local WelcomeParagraph = DashboardTab:CreateParagraph({
-        Title = "Welcome to CRB Hub!",
-        Content = "CRB Hub delivers lightning-fast auto farming solutions with boost mode. Configure your auto farm settings and join our community on Discord for the latest updates and support."
+        Title = "Welcome to Unholy Hub!",
+        Content = "Unholy Hub delivers lightning-fast auto farming solutions with boost mode. Configure your auto farm settings and join our community on Discord for the latest updates and support."
     })
     
     local StatsSection = DashboardTab:CreateSection("Hub Statistics")
@@ -236,25 +236,25 @@
     local BoostStatusLabel = AutoFarmTab:CreateLabel("Boost Status: Disabled", "zap")
     
     local BoostToggle = AutoFarmTab:CreateToggle({
-        Name = "Enable StackX Boost",
+        Name = "Enable Boost",
         CurrentValue = false,
         Flag = "BoostMode",
         Callback = function(Value)
             pcall(function()
                 BoostMode = Value
-                toggleStackXBoost(Value)
+                toggleBoost(Value)
                 if Value then
-                    BoostStatusLabel:Set("Boost Status: Enabled (StackX)", "zap")
+                    BoostStatusLabel:Set("Boost Status: Enabled", "zap")
                     Rayfield:Notify({
-                        Title = "StackX Boost Enabled!",
-                        Content = "Stats are now boosted using StackX method",
+                        Title = "Boost Enabled!",
+                        Content = "Stats are now boosted using death-respawn method",
                         Duration = 3,
                         Image = "zap",
                     })
                 else
                     BoostStatusLabel:Set("Boost Status: Disabled", "zap")
                     Rayfield:Notify({
-                        Title = "StackX Boost Disabled!",
+                        Title = "Boost Disabled!",
                         Content = "Stats are now at normal rate",
                         Duration = 3,
                         Image = "square",
@@ -1428,8 +1428,8 @@
     end
     task.spawn(updateLastLocation)
     
-    -- Function to toggle StackX boost
-    local function toggleStackXBoost(enabled)
+    -- Function to toggle Boost
+    local function toggleBoost(enabled)
         if enabled then
             if deathLoop then return end
             deathLoop = task.spawn(function()
@@ -1445,19 +1445,13 @@
                         continue
                     end
                     
-                    -- Wait until Humanoid is fully loaded
-                    if humanoid.Health <= 0 then
-                        wait(1)
-                        continue
-                    end
-                    
                     -- Kill player
                     pcall(function()
                         humanoid:TakeDamage(humanoid.MaxHealth)
                         humanoid.Health = 0
                     end)
                     
-                    wait(9) -- Loop duration
+                    wait(5) -- Kill every 5 seconds
                 end
             end)
         else
