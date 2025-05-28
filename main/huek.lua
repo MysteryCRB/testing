@@ -1246,4 +1246,194 @@
     
     Rayfield:LoadConfiguration()
     
+    local function createESP(player)
+        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+            return
+        end
+        
+        local character = player.Character
+        local humanoidRootPart = character.HumanoidRootPart
+        
+        local billboardGui = Instance.new("BillboardGui")
+        billboardGui.Name = "TypeHubESP_Status"
+        billboardGui.Adornee = humanoidRootPart
+        billboardGui.Size = UDim2.new(0, 200, 0, 50)
+        billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+        billboardGui.AlwaysOnTop = true
+        billboardGui.Parent = humanoidRootPart
+        
+        local statusLabel = Instance.new("TextLabel")
+        statusLabel.Name = "StatusText"
+        statusLabel.Size = UDim2.new(1, 0, 1, 0)
+        statusLabel.BackgroundTransparency = 1
+        statusLabel.Text = "Loading..."
+        statusLabel.TextColor3 = ESPColor
+        statusLabel.TextScaled = true
+        statusLabel.Font = Enum.Font.GothamBold
+        statusLabel.TextStrokeTransparency = 0
+        statusLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        statusLabel.Parent = billboardGui
+        
+        local function updateStatus()
+            if player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Status") then
+                statusLabel.Text = player.Name .. "\n[" .. player.leaderstats.Status.Value .. "]"
+            else
+                statusLabel.Text = player.Name .. "\n[No Status]"
+            end
+        end
+        
+        updateStatus()
+        
+        if player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Status") then
+            player.leaderstats.Status.Changed:Connect(updateStatus)
+        end
+        
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "TypeHubESP_Highlight"
+        highlight.Adornee = character
+        highlight.FillColor = ESPColor
+        highlight.OutlineColor = ESPColor
+        highlight.FillTransparency = 0.7
+        highlight.OutlineTransparency = 0
+        highlight.Parent = character
+        
+        ESPObjects[player] = {
+            billboard = billboardGui,
+            highlight = highlight,
+            statusLabel = statusLabel,
+            updateStatus = updateStatus
+        }
+    end
+    
+    local function removeESP(player)
+        if ESPObjects[player] then
+            if ESPObjects[player].billboard then
+                ESPObjects[player].billboard:Destroy()
+            end
+            if ESPObjects[player].highlight then
+                ESPObjects[player].highlight:Destroy()
+            end
+            ESPObjects[player] = nil
+        end
+    end
+    
+    local function updateESPColor()
+        for player, objects in pairs(ESPObjects) do
+            if objects.highlight then
+                objects.highlight.FillColor = ESPColor
+                objects.highlight.OutlineColor = ESPColor
+            end
+            if objects.statusLabel then
+                objects.statusLabel.TextColor3 = ESPColor
+            end
+        end
+    end
+    
+    local function toggleESP()
+        if ESPEnabled then
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer then
+                    createESP(player)
+                end
+            end
+            
+            game.Players.PlayerAdded:Connect(function(player)
+                if ESPEnabled then
+                    player.CharacterAdded:Connect(function()
+                        wait(1)
+                        if ESPEnabled then
+                            createESP(player)
+                        end
+                    end)
+                end
+            end)
+            
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer then
+                    player.CharacterAdded:Connect(function()
+                        wait(1)
+                        if ESPEnabled then
+                            createESP(player)
+                        end
+                    end)
+                end
+            end
+            
+        else
+            for player, _ in pairs(ESPObjects) do
+                removeESP(player)
+            end
+        end
+    end
+    
+    local function setupAutoRespawn()
+        local player = game.Players.LocalPlayer
+        
+        if player.Character then
+            local humanoid = player.Character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid.Died:Connect(function()
+                    wait(4)
+                    local args = {{"Respawn"}}
+                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+                end)
+            end
+        end
+        
+        player.CharacterAdded:Connect(function(character)
+            local humanoid = character:WaitForChild("Humanoid")
+            humanoid.Died:Connect(function()
+                wait(4)
+                local args = {{"Respawn"}}
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+            end)
+        end)
+    end
+    
+    local function setupAntiAFK()
+        local vu = game:GetService("VirtualUser")
+        game:GetService("Players").LocalPlayer.Idled:Connect(function()
+            vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            wait(1)
+            vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        end)
+    end
+    
+    setupAutoRespawn()
+    setupAntiAFK()
+    
+    local TypeHubTheme = {
+        TextColor = Color3.fromRGB(255, 255, 255),
+        Background = Color3.fromRGB(26, 26, 26),
+        Topbar = Color3.fromRGB(35, 35, 35),
+        Shadow = Color3.fromRGB(15, 15, 15),
+        NotificationBackground = Color3.fromRGB(26, 26, 26),
+        NotificationActionsBackground = Color3.fromRGB(255, 210, 95),
+        TabBackground = Color3.fromRGB(40, 40, 40),
+        TabStroke = Color3.fromRGB(255, 210, 95),
+        TabBackgroundSelected = Color3.fromRGB(255, 210, 95),
+        TabTextColor = Color3.fromRGB(255, 255, 255),
+        SelectedTabTextColor = Color3.fromRGB(26, 26, 26),
+        ElementBackground = Color3.fromRGB(35, 35, 35),
+        ElementBackgroundHover = Color3.fromRGB(45, 45, 45),
+        SecondaryElementBackground = Color3.fromRGB(30, 30, 30),
+        ElementStroke = Color3.fromRGB(255, 210, 95),
+        SecondaryElementStroke = Color3.fromRGB(200, 168, 76),
+        SliderBackground = Color3.fromRGB(255, 210, 95),
+        SliderProgress = Color3.fromRGB(255, 210, 95),
+        SliderStroke = Color3.fromRGB(255, 220, 120),
+        ToggleBackground = Color3.fromRGB(35, 35, 35),
+        ToggleEnabled = Color3.fromRGB(255, 210, 95),
+        ToggleDisabled = Color3.fromRGB(100, 100, 100),
+        ToggleEnabledStroke = Color3.fromRGB(255, 220, 120),
+        ToggleDisabledStroke = Color3.fromRGB(125, 125, 125),
+        ToggleEnabledOuterStroke = Color3.fromRGB(200, 168, 76),
+        ToggleDisabledOuterStroke = Color3.fromRGB(65, 65, 65),
+        DropdownSelected = Color3.fromRGB(45, 45, 45),
+        DropdownUnselected = Color3.fromRGB(35, 35, 35),
+        InputBackground = Color3.fromRGB(35, 35, 35),
+        InputStroke = Color3.fromRGB(255, 210, 95),
+        PlaceholderColor = Color3.fromRGB(178, 178, 178)
+    }
+    
 end)()
