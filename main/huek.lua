@@ -230,6 +230,8 @@
     
     local BoostSection = AutoFarmTab:CreateSection("Boost Mode")
     
+    local BoostStatusLabel = AutoFarmTab:CreateLabel("Boost Status: Disabled", "zap")
+    
     local BoostToggle = AutoFarmTab:CreateToggle({
         Name = "Enable Boost Mode",
         CurrentValue = false,
@@ -237,6 +239,7 @@
         Callback = function(Value)
             BoostMode = Value
             if Value then
+                BoostStatusLabel:Set("Boost Status: Enabled (" .. BoostMultiplier .. "x)", "zap")
                 Rayfield:Notify({
                     Title = "Boost Mode Enabled!",
                     Content = "Stats are now boosted by " .. BoostMultiplier .. "x",
@@ -244,6 +247,7 @@
                     Image = "zap",
                 })
             else
+                BoostStatusLabel:Set("Boost Status: Disabled", "zap")
                 Rayfield:Notify({
                     Title = "Boost Mode Disabled!",
                     Content = "Stats are now at normal rate",
@@ -264,6 +268,7 @@
             local multiplier = tonumber(string.match(Options[1], "%d+"))
             BoostMultiplier = multiplier
             if BoostMode then
+                BoostStatusLabel:Set("Boost Status: Enabled (" .. BoostMultiplier .. "x)", "zap")
                 Rayfield:Notify({
                     Title = "Boost Multiplier Updated!",
                     Content = "Stats are now boosted by " .. BoostMultiplier .. "x",
@@ -1185,61 +1190,52 @@
     
     spawn(function()
         while true do
-            wait(0.1)
+            local waitTime = BoostMode and (0.1 / BoostMultiplier) or 0.1
+            wait(waitTime)
             
             if AutoFarmBT then
-                for i = 1, BoostMode and BoostMultiplier or 1 do
-                    local args = {
-                        {
-                            "+BT" .. BTLevel
-                        }
+                local args = {
+                    {
+                        "+BT" .. BTLevel
                     }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                end
+                }
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
             end
             
             if AutoFarmFS then
-                for i = 1, BoostMode and BoostMultiplier or 1 do
-                    local args = {
-                        {
-                            "+FS" .. FSLevel
-                        }
+                local args = {
+                    {
+                        "+FS" .. FSLevel
                     }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                end
+                }
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
             end
             
             if AutoFarmPP then
-                for i = 1, BoostMode and BoostMultiplier or 1 do
-                    local args = {
-                        {
-                            "+PP" .. PPLevel
-                        }
+                local args = {
+                    {
+                        "+PP" .. PPLevel
                     }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                end
+                }
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
             end
             
             if AutoFarmJF then
-                for i = 1, BoostMode and BoostMultiplier or 1 do
-                    local args = {
-                        {
-                            "+JF" .. JFLevel
-                        }
+                local args = {
+                    {
+                        "+JF" .. JFLevel
                     }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                end
+                }
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
             end
             
             if AutoFarmMS then
-                for i = 1, BoostMode and BoostMultiplier or 1 do
-                    local args = {
-                        {
-                            "+MS" .. MSLevel
-                        }
+                local args = {
+                    {
+                        "+MS" .. MSLevel
                     }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                end
+                }
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
             end
         end
     end)
@@ -1255,7 +1251,7 @@
         local humanoidRootPart = character.HumanoidRootPart
         
         local billboardGui = Instance.new("BillboardGui")
-        billboardGui.Name = "TypeHubESP_Status"
+        billboardGui.Name = "CRBHubESP_Status"
         billboardGui.Adornee = humanoidRootPart
         billboardGui.Size = UDim2.new(0, 200, 0, 50)
         billboardGui.StudsOffset = Vector3.new(0, 3, 0)
@@ -1289,7 +1285,7 @@
         end
         
         local highlight = Instance.new("Highlight")
-        highlight.Name = "TypeHubESP_Highlight"
+        highlight.Name = "CRBHubESP_Highlight"
         highlight.Adornee = character
         highlight.FillColor = ESPColor
         highlight.OutlineColor = ESPColor
