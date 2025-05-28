@@ -78,6 +78,9 @@
     local deathLoop = nil
     local lastLocation = nil
     local player = game.Players.LocalPlayer
+    local BoostSpamming = false
+    local BoostNotified = false
+    local BoostCurrentKey = "H"
     
     local SpherePunchSpamming = false
     local SpherePunchNotified = false
@@ -235,32 +238,35 @@
     
     local BoostStatusLabel = AutoFarmTab:CreateLabel("Boost Status: Disabled", "zap")
     
-    local BoostToggle = AutoFarmTab:CreateToggle({
-        Name = "Enable Boost",
-        CurrentValue = false,
-        Flag = "BoostMode",
-        Callback = function(Value)
-            pcall(function()
-                BoostMode = Value
-                toggleBoost(Value)
-                if Value then
-                    BoostStatusLabel:Set("Boost Status: Enabled", "zap")
-                    Rayfield:Notify({
-                        Title = "Boost Enabled!",
-                        Content = "Stats are now boosted using death-respawn method",
-                        Duration = 3,
-                        Image = "zap",
-                    })
-                else
-                    BoostStatusLabel:Set("Boost Status: Disabled", "zap")
-                    Rayfield:Notify({
-                        Title = "Boost Disabled!",
-                        Content = "Stats are now at normal rate",
-                        Duration = 3,
-                        Image = "square",
-                    })
-                end
-            end)
+    local BoostKeybind = AutoFarmTab:CreateKeybind({
+        Name = "Rapid Boost (Hold H)",
+        CurrentKeybind = "H",
+        HoldToInteract = true,
+        Flag = "BoostKeybind",
+        Callback = function(Keybind)
+            if type(Keybind) == "string" then
+                BoostCurrentKey = Keybind
+            end
+            
+            BoostSpamming = Keybind
+            
+            if Keybind and not BoostNotified then
+                BoostNotified = true
+                Rayfield:Notify({
+                    Title = "Rapid Boost Activated!",
+                    Content = "Ultra-fast stat gains while holding " .. BoostCurrentKey,
+                    Duration = 3,
+                    Image = "zap",
+                })
+            elseif not Keybind and BoostNotified then
+                BoostNotified = false
+                Rayfield:Notify({
+                    Title = "Rapid Boost Deactivated!",
+                    Content = "Released " .. BoostCurrentKey .. " key - boost stopped",
+                    Duration = 3,
+                    Image = "shield-off",
+                })
+            end
         end,
     })
     
@@ -1181,52 +1187,54 @@
     
     spawn(function()
         while true do
-            local waitTime = BoostMode and (0.1 / BoostMultiplier) or 0.1
-            wait(waitTime)
+            wait(0.01) -- Extremely fast tick rate
             
-            if AutoFarmBT then
-                local args = {
-                    {
-                        "+BT" .. BTLevel
+            if BoostSpamming then
+                -- Fire all stat upgrades simultaneously
+                if AutoFarmBT then
+                    local args = {
+                        {
+                            "+BT" .. BTLevel
+                        }
                     }
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            end
-            
-            if AutoFarmFS then
-                local args = {
-                    {
-                        "+FS" .. FSLevel
+                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+                end
+                
+                if AutoFarmFS then
+                    local args = {
+                        {
+                            "+FS" .. FSLevel
+                        }
                     }
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            end
-            
-            if AutoFarmPP then
-                local args = {
-                    {
-                        "+PP" .. PPLevel
+                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+                end
+                
+                if AutoFarmPP then
+                    local args = {
+                        {
+                            "+PP" .. PPLevel
+                        }
                     }
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            end
-            
-            if AutoFarmJF then
-                local args = {
-                    {
-                        "+JF" .. JFLevel
+                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+                end
+                
+                if AutoFarmJF then
+                    local args = {
+                        {
+                            "+JF" .. JFLevel
+                        }
                     }
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            end
-            
-            if AutoFarmMS then
-                local args = {
-                    {
-                        "+MS" .. MSLevel
+                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+                end
+                
+                if AutoFarmMS then
+                    local args = {
+                        {
+                            "+MS" .. MSLevel
+                        }
                     }
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+                end
             end
         end
     end)
