@@ -75,6 +75,8 @@
     
     local BoostMode = false
     local BoostMultiplier = 1
+    local deathLoop = nil
+    local lastLocation = nil
     
     local SpherePunchSpamming = false
     local SpherePunchNotified = false
@@ -233,47 +235,27 @@
     local BoostStatusLabel = AutoFarmTab:CreateLabel("Boost Status: Disabled", "zap")
     
     local BoostToggle = AutoFarmTab:CreateToggle({
-        Name = "Enable Boost Mode",
+        Name = "Enable StackX Boost",
         CurrentValue = false,
         Flag = "BoostMode",
         Callback = function(Value)
             BoostMode = Value
+            toggleStackXBoost(Value)
             if Value then
-                BoostStatusLabel:Set("Boost Status: Enabled (" .. BoostMultiplier .. "x)", "zap")
+                BoostStatusLabel:Set("Boost Status: Enabled (StackX)", "zap")
                 Rayfield:Notify({
-                    Title = "Boost Mode Enabled!",
-                    Content = "Stats are now boosted by " .. BoostMultiplier .. "x",
+                    Title = "StackX Boost Enabled!",
+                    Content = "Stats are now boosted using StackX method",
                     Duration = 3,
                     Image = "zap",
                 })
             else
                 BoostStatusLabel:Set("Boost Status: Disabled", "zap")
                 Rayfield:Notify({
-                    Title = "Boost Mode Disabled!",
+                    Title = "StackX Boost Disabled!",
                     Content = "Stats are now at normal rate",
                     Duration = 3,
                     Image = "square",
-                })
-            end
-        end,
-    })
-    
-    local BoostDropdown = AutoFarmTab:CreateDropdown({
-        Name = "Boost Multiplier",
-        Options = {"2x", "5x", "10x"},
-        CurrentOption = {"2x"},
-        MultipleOptions = false,
-        Flag = "BoostMultiplier",
-        Callback = function(Options)
-            local multiplier = tonumber(string.match(Options[1], "%d+"))
-            BoostMultiplier = multiplier
-            if BoostMode then
-                BoostStatusLabel:Set("Boost Status: Enabled (" .. BoostMultiplier .. "x)", "zap")
-                Rayfield:Notify({
-                    Title = "Boost Multiplier Updated!",
-                    Content = "Stats are now boosted by " .. BoostMultiplier .. "x",
-                    Duration = 3,
-                    Image = "zap",
                 })
             end
         end,
@@ -1431,5 +1413,84 @@
         InputStroke = Color3.fromRGB(255, 210, 95),
         PlaceholderColor = Color3.fromRGB(178, 178, 178)
     }
+    
+    -- Function to update last location
+    local function updateLastLocation()
+        while true do
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                lastLocation = player.Character.HumanoidRootPart.Position
+            end
+            wait(5)
+        end
+    end
+    task.spawn(updateLastLocation)
+    
+    -- Function to toggle StackX boost
+    local function toggleStackXBoost(enabled)
+        if enabled then
+            if deathLoop then return end
+            deathLoop = task.spawn(function()
+                while true do
+                    -- Wait for character to spawn
+                    repeat wait() until player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+                    
+                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                    
+                    -- Wait until Humanoid is fully loaded
+                    repeat wait() until humanoid and humanoid.Health > 0
+                    
+                    -- Kill player
+                    while humanoid.Health > 0 do
+                        humanoid:TakeDamage(humanoid.MaxHealth)
+                        humanoid.Health = 0
+                        wait(0.1)
+                    end
+                    
+                    wait(9) -- Loop duration
+                end
+            end)
+        else
+            if deathLoop then
+                task.cancel(deathLoop)
+                deathLoop = nil
+            end
+        end
+    end
+    
+    -- Function to respawn character after death
+    local function respawnLoop()
+        while true do
+            repeat wait() until player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+            
+            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            
+            if humanoid and humanoid.Health <= 0 then
+                wait(1)
+                
+                -- Respawn process
+                local remoteEvent = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvent")
+                if remoteEvent then
+                    remoteEvent:FireServer({[1] = "Respawn"})
+                end
+                
+                -- Reset UI settings
+                wait(1)
+                game.Lighting.Blur.Enabled = false
+                game.Players.LocalPlayer.PlayerGui.IntroGui.Enabled = false
+                game.Players.LocalPlayer.PlayerGui.ScreenGui.Enabled = true
+                
+                -- Wait until new character is loaded
+                repeat wait(0.1) until player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                
+                -- Teleport to last location
+                if lastLocation then
+                    player.Character.HumanoidRootPart.CFrame = CFrame.new(lastLocation)
+                end
+            end
+            
+            wait(0.1)
+        end
+    end
+    task.spawn(respawnLoop)
     
 end)()
