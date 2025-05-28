@@ -238,35 +238,32 @@
     
     local BoostStatusLabel = AutoFarmTab:CreateLabel("Boost Status: Disabled", "zap")
     
-    local BoostKeybind = AutoFarmTab:CreateKeybind({
-        Name = "Rapid Boost (Hold H)",
-        CurrentKeybind = "H",
-        HoldToInteract = true,
-        Flag = "BoostKeybind",
-        Callback = function(Keybind)
-            if type(Keybind) == "string" then
-                BoostCurrentKey = Keybind
-            end
-            
-            BoostSpamming = Keybind
-            
-            if Keybind and not BoostNotified then
-                BoostNotified = true
-                Rayfield:Notify({
-                    Title = "Rapid Boost Activated!",
-                    Content = "Ultra-fast stat gains while holding " .. BoostCurrentKey,
-                    Duration = 3,
-                    Image = "zap",
-                })
-            elseif not Keybind and BoostNotified then
-                BoostNotified = false
-                Rayfield:Notify({
-                    Title = "Rapid Boost Deactivated!",
-                    Content = "Released " .. BoostCurrentKey .. " key - boost stopped",
-                    Duration = 3,
-                    Image = "shield-off",
-                })
-            end
+    local BoostToggle = AutoFarmTab:CreateToggle({
+        Name = "Enable Boost",
+        CurrentValue = false,
+        Flag = "BoostMode",
+        Callback = function(Value)
+            pcall(function()
+                BoostMode = Value
+                toggleBoost(Value)
+                if Value then
+                    BoostStatusLabel:Set("Boost Status: Enabled", "zap")
+                    Rayfield:Notify({
+                        Title = "Boost Enabled!",
+                        Content = "Stats are now boosted using death-respawn method",
+                        Duration = 3,
+                        Image = "zap",
+                    })
+                else
+                    BoostStatusLabel:Set("Boost Status: Disabled", "zap")
+                    Rayfield:Notify({
+                        Title = "Boost Disabled!",
+                        Content = "Stats are now at normal rate",
+                        Duration = 3,
+                        Image = "square",
+                    })
+                end
+            end)
         end,
     })
     
