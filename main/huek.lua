@@ -1,26 +1,10 @@
--- CRB Hub
+-- Unh0ly-Hub
 (function()
     local HttpService = game:GetService("HttpService")
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
     
-    -- Get executor name
-    local function getExecutorName()
-        if syn then return "Synapse X"
-        elseif KRNL_LOADED then return "KRNL"
-        elseif getgenv().COMET_LOADED then return "Comet"
-        elseif getgenv().EVON_LOADED then return "Evon"
-        elseif getgenv().WRD_LOADED then return "WeAreDevs"
-        elseif getgenv().OXYGEN_LOADED then return "Oxygen U"
-        elseif getgenv().FLUXUS_LOADED then return "Fluxus"
-        elseif getgenv().DELTA_LOADED then return "Delta"
-        elseif getgenv().WAVE_LOADED then return "Wave"
-        elseif identifyexecutor then return identifyexecutor()
-        else return "Unknown"
-        end
-    end
-    
-    -- Load Rayfield
+    -- Загрузка Rayfield
     local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
     
     -- Number formatting function
@@ -50,16 +34,93 @@
         end
     end
     
-    local function getSafeValue(obj, default)
-        if obj and obj.Value ~= nil then
-            return obj.Value
-        end
-        return default or 0
-    end
+    local Window = Rayfield:CreateWindow({
+        Name = "Unh0ly-Hub",
+        Icon = "shield-check",
+        LoadingTitle = "Unh0ly-Hub Loading...",
+        LoadingSubtitle = "Loading Complete",
+        Theme = TypeHubTheme,
+        
+        ToggleUIKeybind = "K",
+        
+        DisableRayfieldPrompts = false,
+        DisableBuildWarnings = false,
+        
+        ConfigurationSaving = {
+            Enabled = true,
+            FolderName = "Unh0lyHub",
+            FileName = "Unh0lyHub_Config"
+        },
+        
+        KeySystem = false
+    })
     
-    local ESPEnabled = false
-    local ESPColor = Color3.fromRGB(255, 210, 95)
-    local ESPObjects = {}
+    Rayfield:Notify({
+        Title = "Unh0ly-Hub Loaded!",
+        Content = "Welcome to Unh0ly-Hub!",
+        Duration = 5,
+        Image = "shield-check",
+    })
+    
+    local DashboardTab = Window:CreateTab("Dashboard", "home")
+    
+    local DashboardSection = DashboardTab:CreateSection("Welcome to Unh0ly-Hub")
+    
+    local WelcomeParagraph = DashboardTab:CreateParagraph({
+        Title = "Welcome to Unh0ly-Hub!",
+        Content = "Unh0ly-Hub delivers lightning-fast auto farming solutions. Configure your auto farm settings and enjoy the features."
+    })
+    
+    local StatsSection = DashboardTab:CreateSection("Hub Statistics")
+    
+    local PlayersLabel = DashboardTab:CreateLabel("Players in Server: " .. #game.Players:GetPlayers(), "users")
+    local PingLabel = DashboardTab:CreateLabel("Ping: " .. game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() .. "ms", "wifi")
+    local FPSLabel = DashboardTab:CreateLabel("FPS: " .. math.floor(1/game:GetService("RunService").Heartbeat:Wait()), "monitor")
+    
+    local SystemInfoSection = DashboardTab:CreateSection("System Information")
+    
+    local ExecutorLabel = DashboardTab:CreateLabel("Executor: " .. getExecutorName(), "cpu")
+    local GameLabel = DashboardTab:CreateLabel("Game: " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name, "gamepad-2")
+    
+    local AutoSystemsSection = DashboardTab:CreateSection("Auto Systems Status")
+    
+    local AutoRespawnLabel = DashboardTab:CreateLabel("Auto Respawn (4s): ACTIVE", "refresh-cw")
+    local AntiAFKLabel = DashboardTab:CreateLabel("Anti AFK: ACTIVE", "shield-check")
+    local AntiBlurLabel = DashboardTab:CreateLabel("Anti Blur: ACTIVE", "eye-off")
+    
+    local TypeHubTheme = {
+        TextColor = Color3.fromRGB(255, 255, 255),
+        Background = Color3.fromRGB(26, 26, 26),
+        Topbar = Color3.fromRGB(35, 35, 35),
+        Shadow = Color3.fromRGB(15, 15, 15),
+        NotificationBackground = Color3.fromRGB(26, 26, 26),
+        NotificationActionsBackground = Color3.fromRGB(255, 210, 95),
+        TabBackground = Color3.fromRGB(40, 40, 40),
+        TabStroke = Color3.fromRGB(255, 210, 95),
+        TabBackgroundSelected = Color3.fromRGB(255, 210, 95),
+        TabTextColor = Color3.fromRGB(255, 255, 255),
+        SelectedTabTextColor = Color3.fromRGB(26, 26, 26),
+        ElementBackground = Color3.fromRGB(35, 35, 35),
+        ElementBackgroundHover = Color3.fromRGB(45, 45, 45),
+        SecondaryElementBackground = Color3.fromRGB(30, 30, 30),
+        ElementStroke = Color3.fromRGB(255, 210, 95),
+        SecondaryElementStroke = Color3.fromRGB(200, 168, 76),
+        SliderBackground = Color3.fromRGB(255, 210, 95),
+        SliderProgress = Color3.fromRGB(255, 210, 95),
+        SliderStroke = Color3.fromRGB(255, 220, 120),
+        ToggleBackground = Color3.fromRGB(35, 35, 35),
+        ToggleEnabled = Color3.fromRGB(255, 210, 95),
+        ToggleDisabled = Color3.fromRGB(100, 100, 100),
+        ToggleEnabledStroke = Color3.fromRGB(255, 220, 120),
+        ToggleDisabledStroke = Color3.fromRGB(125, 125, 125),
+        ToggleEnabledOuterStroke = Color3.fromRGB(200, 168, 76),
+        ToggleDisabledOuterStroke = Color3.fromRGB(65, 65, 65),
+        DropdownSelected = Color3.fromRGB(45, 45, 45),
+        DropdownUnselected = Color3.fromRGB(35, 35, 35),
+        InputBackground = Color3.fromRGB(35, 35, 35),
+        InputStroke = Color3.fromRGB(255, 210, 95),
+        PlaceholderColor = Color3.fromRGB(178, 178, 178)
+    }
     
     local AutoFarmBT = false
     local AutoFarmFS = false
@@ -72,15 +133,6 @@
     local PPLevel = 1
     local JFLevel = 1
     local MSLevel = 1
-    
-    local BoostMode = false
-    local BoostMultiplier = 1
-    local deathLoop = nil
-    local lastLocation = nil
-    local player = game.Players.LocalPlayer
-    local BoostSpamming = false
-    local BoostNotified = false
-    local BoostCurrentKey = "H"
     
     local SpherePunchSpamming = false
     local SpherePunchNotified = false
@@ -119,41 +171,13 @@
         return Vector3.new(0, 0, 0)
     end
     
-    local Window = Rayfield:CreateWindow({
-        Name = "Unholy Hub",
-        Icon = "shield-check",
-        LoadingTitle = "Unholy Hub Loading...",
-        LoadingSubtitle = "Loading...",
-        Theme = TypeHubTheme,
-        
-        ToggleUIKeybind = "K",
-        
-        DisableRayfieldPrompts = false,
-        DisableBuildWarnings = false,
-        
-        ConfigurationSaving = {
-            Enabled = true,
-            FolderName = "UnholyHub",
-            FileName = "UnholyHub_Config"
-        },
-        
-        KeySystem = false
-    })
-    
-    Rayfield:Notify({
-        Title = "Unholy Hub Authenticated!",
-        Content = "Welcome! Your session is secure and protected.",
-        Duration = 5,
-        Image = "shield-check",
-    })
-    
     local DashboardTab = Window:CreateTab("Dashboard", "home")
     
-    local DashboardSection = DashboardTab:CreateSection("Welcome to Unholy Hub")
+    local DashboardSection = DashboardTab:CreateSection("Welcome to Unh0ly-Hub")
     
     local WelcomeParagraph = DashboardTab:CreateParagraph({
-        Title = "Welcome to Unholy Hub!",
-        Content = "Unholy Hub delivers lightning-fast auto farming solutions with boost mode. Configure your auto farm settings and join our community on Discord for the latest updates and support."
+        Title = "Welcome to Unh0ly-Hub!",
+        Content = "Unh0ly-Hub delivers lightning-fast auto farming solutions. Configure your auto farm settings and enjoy the features."
     })
     
     local StatsSection = DashboardTab:CreateSection("Hub Statistics")
@@ -167,12 +191,6 @@
     local ExecutorLabel = DashboardTab:CreateLabel("Executor: " .. getExecutorName(), "cpu")
     local GameLabel = DashboardTab:CreateLabel("Game: " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name, "gamepad-2")
     
-    local AuthSection = DashboardTab:CreateSection("Authentication Status")
-    
-    local AuthStatusLabel = DashboardTab:CreateLabel("Status: AUTHENTICATED", "shield-check")
-    local SessionLabel = DashboardTab:CreateLabel("Session: Active", "clock")
-    local HWIDLabel = DashboardTab:CreateLabel("HWID: Protected", "key")
-    
     local AutoSystemsSection = DashboardTab:CreateSection("Auto Systems Status")
     
     local AutoRespawnLabel = DashboardTab:CreateLabel("Auto Respawn (4s): ACTIVE", "refresh-cw")
@@ -185,14 +203,6 @@
             PlayersLabel:Set("Players in Server: " .. #game.Players:GetPlayers(), "users")
             PingLabel:Set("Ping: " .. math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()) .. "ms", "wifi")
             FPSLabel:Set("FPS: " .. math.floor(1/game:GetService("RunService").Heartbeat:Wait()), "monitor")
-            
-            if isAuthenticated then
-                AuthStatusLabel:Set("Status: AUTHENTICATED", "shield-check")
-                SessionLabel:Set("Session: Active (" .. math.floor((tick() - lastAuthCheck)/60) .. "m ago)", "clock")
-            else
-                AuthStatusLabel:Set("Status: EXPIRED", "shield-x")
-                SessionLabel:Set("Session: Expired", "x")
-            end
         end
     end)
     
@@ -233,39 +243,6 @@
     })
     
     local AutoFarmTab = Window:CreateTab("Auto Farm", "zap")
-    
-    local BoostSection = AutoFarmTab:CreateSection("Boost Mode")
-    
-    local BoostStatusLabel = AutoFarmTab:CreateLabel("Boost Status: Disabled", "zap")
-    
-    local BoostToggle = AutoFarmTab:CreateToggle({
-        Name = "Enable Boost",
-        CurrentValue = false,
-        Flag = "BoostMode",
-        Callback = function(Value)
-            pcall(function()
-                BoostMode = Value
-                toggleBoost(Value)
-                if Value then
-                    BoostStatusLabel:Set("Boost Status: Enabled", "zap")
-                    Rayfield:Notify({
-                        Title = "Boost Enabled!",
-                        Content = "Stats are now boosted using death-respawn method",
-                        Duration = 3,
-                        Image = "zap",
-                    })
-                else
-                    BoostStatusLabel:Set("Boost Status: Disabled", "zap")
-                    Rayfield:Notify({
-                        Title = "Boost Disabled!",
-                        Content = "Stats are now at normal rate",
-                        Duration = 3,
-                        Image = "square",
-                    })
-                end
-            end)
-        end,
-    })
     
     local BTSection = AutoFarmTab:CreateSection("BT Auto Farm")
     
@@ -314,12 +291,6 @@
         Flag = "FSLevel",
         Callback = function(Options)
             FSLevel = tonumber(Options[1])
-            Rayfield:Notify({
-                Title = "FS Level Updated!",
-                Content = "FS Level set to " .. FSLevel,
-                Duration = 3,
-                Image = "zap",
-            })
         end,
     })
     
@@ -1085,12 +1056,12 @@
     
     local ThemeDropdown = SettingsTab:CreateDropdown({
         Name = "UI Theme",
-        Options = {"Type Hub Custom", "Default", "Ocean", "Serenity", "Amethyst"},
-        CurrentOption = {"Type Hub Custom"},
+        Options = {"Unh0ly Custom", "Default", "Ocean", "Serenity", "Amethyst"},
+        CurrentOption = {"Unh0ly Custom"},
         MultipleOptions = false,
         Flag = "Theme",
         Callback = function(Options)
-            if Options[1] == "Type Hub Custom" then
+            if Options[1] == "Unh0ly Custom" then
                 Window.ModifyTheme(TypeHubTheme)
             else
                 Window.ModifyTheme(Options[1])
@@ -1113,6 +1084,7 @@
         end,
     })
     
+
     spawn(function()
         while true do
             wait(0.05)
@@ -1184,361 +1156,55 @@
     
     spawn(function()
         while true do
-            wait(0.1) -- Keep normal tick rate for stability
+            wait(0.1)
             
             if AutoFarmBT then
-                for i = 1, 1000 do -- 1000x multiplier
-                    local args = {
-                        {
-                            "+BT" .. BTLevel
-                        }
+                local args = {
+                    {
+                        "+BT" .. BTLevel
                     }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                end
+                }
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
             end
             
             if AutoFarmFS then
-                for i = 1, 1000 do -- 1000x multiplier
-                    local args = {
-                        {
-                            "+FS" .. FSLevel
-                        }
+                local args = {
+                    {
+                        "+FS" .. FSLevel
                     }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                end
+                }
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
             end
             
             if AutoFarmPP then
-                for i = 1, 1000 do -- 1000x multiplier
-                    local args = {
-                        {
-                            "+PP" .. PPLevel
-                        }
+                local args = {
+                    {
+                        "+PP" .. PPLevel
                     }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                end
+                }
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
             end
             
             if AutoFarmJF then
-                for i = 1, 1000 do -- 1000x multiplier
-                    local args = {
-                        {
-                            "+JF" .. JFLevel
-                        }
+                local args = {
+                    {
+                        "+JF" .. JFLevel
                     }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                end
+                }
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
             end
             
             if AutoFarmMS then
-                for i = 1, 1000 do -- 1000x multiplier
-                    local args = {
-                        {
-                            "+MS" .. MSLevel
-                        }
+                local args = {
+                    {
+                        "+MS" .. MSLevel
                     }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                end
+                }
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
             end
         end
     end)
     
     Rayfield:LoadConfiguration()
-    
-    local function createESP(player)
-        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-            return
-        end
-        
-        local character = player.Character
-        local humanoidRootPart = character.HumanoidRootPart
-        
-        local billboardGui = Instance.new("BillboardGui")
-        billboardGui.Name = "CRBHubESP_Status"
-        billboardGui.Adornee = humanoidRootPart
-        billboardGui.Size = UDim2.new(0, 200, 0, 50)
-        billboardGui.StudsOffset = Vector3.new(0, 3, 0)
-        billboardGui.AlwaysOnTop = true
-        billboardGui.Parent = humanoidRootPart
-        
-        local statusLabel = Instance.new("TextLabel")
-        statusLabel.Name = "StatusText"
-        statusLabel.Size = UDim2.new(1, 0, 1, 0)
-        statusLabel.BackgroundTransparency = 1
-        statusLabel.Text = "Loading..."
-        statusLabel.TextColor3 = ESPColor
-        statusLabel.TextScaled = true
-        statusLabel.Font = Enum.Font.GothamBold
-        statusLabel.TextStrokeTransparency = 0
-        statusLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-        statusLabel.Parent = billboardGui
-        
-        local function updateStatus()
-            if player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Status") then
-                statusLabel.Text = player.Name .. "\n[" .. player.leaderstats.Status.Value .. "]"
-            else
-                statusLabel.Text = player.Name .. "\n[No Status]"
-            end
-        end
-        
-        updateStatus()
-        
-        if player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Status") then
-            player.leaderstats.Status.Changed:Connect(updateStatus)
-        end
-        
-        local highlight = Instance.new("Highlight")
-        highlight.Name = "CRBHubESP_Highlight"
-        highlight.Adornee = character
-        highlight.FillColor = ESPColor
-        highlight.OutlineColor = ESPColor
-        highlight.FillTransparency = 0.7
-        highlight.OutlineTransparency = 0
-        highlight.Parent = character
-        
-        ESPObjects[player] = {
-            billboard = billboardGui,
-            highlight = highlight,
-            statusLabel = statusLabel,
-            updateStatus = updateStatus
-        }
-    end
-    
-    local function removeESP(player)
-        if ESPObjects[player] then
-            if ESPObjects[player].billboard then
-                ESPObjects[player].billboard:Destroy()
-            end
-            if ESPObjects[player].highlight then
-                ESPObjects[player].highlight:Destroy()
-            end
-            ESPObjects[player] = nil
-        end
-    end
-    
-    local function updateESPColor()
-        for player, objects in pairs(ESPObjects) do
-            if objects.highlight then
-                objects.highlight.FillColor = ESPColor
-                objects.highlight.OutlineColor = ESPColor
-            end
-            if objects.statusLabel then
-                objects.statusLabel.TextColor3 = ESPColor
-            end
-        end
-    end
-    
-    local function toggleESP()
-        if ESPEnabled then
-            for _, player in pairs(game.Players:GetPlayers()) do
-                if player ~= game.Players.LocalPlayer then
-                    createESP(player)
-                end
-            end
-            
-            game.Players.PlayerAdded:Connect(function(player)
-                if ESPEnabled then
-                    player.CharacterAdded:Connect(function()
-                        wait(1)
-                        if ESPEnabled then
-                            createESP(player)
-                        end
-                    end)
-                end
-            end)
-            
-            for _, player in pairs(game.Players:GetPlayers()) do
-                if player ~= game.Players.LocalPlayer then
-                    player.CharacterAdded:Connect(function()
-                        wait(1)
-                        if ESPEnabled then
-                            createESP(player)
-                        end
-                    end)
-                end
-            end
-            
-        else
-            for player, _ in pairs(ESPObjects) do
-                removeESP(player)
-            end
-        end
-    end
-    
-    local function setupAutoRespawn()
-        local player = game.Players.LocalPlayer
-        
-        if player.Character then
-            local humanoid = player.Character:FindFirstChild("Humanoid")
-            if humanoid then
-                humanoid.Died:Connect(function()
-                    wait(4)
-                    local args = {{"Respawn"}}
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                end)
-            end
-        end
-        
-        player.CharacterAdded:Connect(function(character)
-            local humanoid = character:WaitForChild("Humanoid")
-            humanoid.Died:Connect(function()
-                wait(4)
-                local args = {{"Respawn"}}
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            end)
-        end)
-    end
-    
-    local function setupAntiAFK()
-        local vu = game:GetService("VirtualUser")
-        game:GetService("Players").LocalPlayer.Idled:Connect(function()
-            vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-            wait(1)
-            vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-        end)
-    end
-    
-    setupAutoRespawn()
-    setupAntiAFK()
-    
-    local TypeHubTheme = {
-        TextColor = Color3.fromRGB(255, 255, 255),
-        Background = Color3.fromRGB(26, 26, 26),
-        Topbar = Color3.fromRGB(35, 35, 35),
-        Shadow = Color3.fromRGB(15, 15, 15),
-        NotificationBackground = Color3.fromRGB(26, 26, 26),
-        NotificationActionsBackground = Color3.fromRGB(255, 210, 95),
-        TabBackground = Color3.fromRGB(40, 40, 40),
-        TabStroke = Color3.fromRGB(255, 210, 95),
-        TabBackgroundSelected = Color3.fromRGB(255, 210, 95),
-        TabTextColor = Color3.fromRGB(255, 255, 255),
-        SelectedTabTextColor = Color3.fromRGB(26, 26, 26),
-        ElementBackground = Color3.fromRGB(35, 35, 35),
-        ElementBackgroundHover = Color3.fromRGB(45, 45, 45),
-        SecondaryElementBackground = Color3.fromRGB(30, 30, 30),
-        ElementStroke = Color3.fromRGB(255, 210, 95),
-        SecondaryElementStroke = Color3.fromRGB(200, 168, 76),
-        SliderBackground = Color3.fromRGB(255, 210, 95),
-        SliderProgress = Color3.fromRGB(255, 210, 95),
-        SliderStroke = Color3.fromRGB(255, 220, 120),
-        ToggleBackground = Color3.fromRGB(35, 35, 35),
-        ToggleEnabled = Color3.fromRGB(255, 210, 95),
-        ToggleDisabled = Color3.fromRGB(100, 100, 100),
-        ToggleEnabledStroke = Color3.fromRGB(255, 220, 120),
-        ToggleDisabledStroke = Color3.fromRGB(125, 125, 125),
-        ToggleEnabledOuterStroke = Color3.fromRGB(200, 168, 76),
-        ToggleDisabledOuterStroke = Color3.fromRGB(65, 65, 65),
-        DropdownSelected = Color3.fromRGB(45, 45, 45),
-        DropdownUnselected = Color3.fromRGB(35, 35, 35),
-        InputBackground = Color3.fromRGB(35, 35, 35),
-        InputStroke = Color3.fromRGB(255, 210, 95),
-        PlaceholderColor = Color3.fromRGB(178, 178, 178)
-    }
-    
-    -- Function to update last location
-    local function updateLastLocation()
-        while true do
-            if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                lastLocation = player.Character.HumanoidRootPart.Position
-            end
-            wait(5)
-        end
-    end
-    task.spawn(updateLastLocation)
-    
-    -- Function to toggle Boost
-    local function toggleBoost(enabled)
-        if enabled then
-            if deathLoop then return end
-            deathLoop = task.spawn(function()
-                while true do
-                    if not player or not player.Character then
-                        wait(1)
-                        continue
-                    end
-                    
-                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-                    if not humanoid then
-                        wait(1)
-                        continue
-                    end
-                    
-                    -- Kill player immediately
-                    pcall(function()
-                        humanoid:TakeDamage(humanoid.MaxHealth)
-                        humanoid.Health = 0
-                    end)
-                    
-                    -- Wait exactly 5 seconds
-                    wait(5)
-                end
-            end)
-        else
-            if deathLoop then
-                task.cancel(deathLoop)
-                deathLoop = nil
-            end
-        end
-    end
-    
-    -- Function to respawn character after death
-    local function respawnLoop()
-        while true do
-            if not player or not player.Character then
-                wait(1)
-                continue
-            end
-            
-            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-            if not humanoid then
-                wait(1)
-                continue
-            end
-            
-            if humanoid.Health <= 0 then
-                wait(1)
-                
-                -- Respawn process
-                pcall(function()
-                    local remoteEvent = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvent")
-                    if remoteEvent then
-                        remoteEvent:FireServer({[1] = "Respawn"})
-                    end
-                end)
-                
-                -- Reset UI settings
-                wait(1)
-                pcall(function()
-                    game.Lighting.Blur.Enabled = false
-                    if player.PlayerGui then
-                        if player.PlayerGui:FindFirstChild("IntroGui") then
-                            player.PlayerGui.IntroGui.Enabled = false
-                        end
-                        if player.PlayerGui:FindFirstChild("ScreenGui") then
-                            player.PlayerGui.ScreenGui.Enabled = true
-                        end
-                    end
-                end)
-                
-                -- Wait until new character is loaded
-                repeat 
-                    wait(0.1)
-                    if not player or not player.Character then
-                        break
-                    end
-                until player.Character:FindFirstChild("HumanoidRootPart")
-                
-                -- Teleport to last location
-                if lastLocation and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    pcall(function()
-                        player.Character.HumanoidRootPart.CFrame = CFrame.new(lastLocation)
-                    end)
-                end
-            end
-            
-            wait(0.1)
-        end
-    end
-    task.spawn(respawnLoop)
     
 end)()
