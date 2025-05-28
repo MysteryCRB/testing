@@ -1,10 +1,10 @@
--- Unh0ly-Hub
+-- Unh0ly Hub
 (function()
     local HttpService = game:GetService("HttpService")
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
     
-    -- Загрузка Rayfield
+    -- Load Rayfield UI
     local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
     
     -- Number formatting function
@@ -34,59 +34,172 @@
         end
     end
     
-    local Window = Rayfield:CreateWindow({
-        Name = "Unh0ly-Hub",
-        Icon = "shield-check",
-        LoadingTitle = "Unh0ly-Hub Loading...",
-        LoadingSubtitle = "Loading Complete",
-        Theme = TypeHubTheme,
+    local function getSafeValue(obj, default)
+        if obj and obj.Value ~= nil then
+            return obj.Value
+        end
+        return default or 0
+    end
+    
+    local ESPEnabled = false
+    local ESPColor = Color3.fromRGB(255, 210, 95)
+    local ESPObjects = {}
+    
+    local function createESP(player)
+        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+            return
+        end
         
-        ToggleUIKeybind = "K",
+        local character = player.Character
+        local humanoidRootPart = character.HumanoidRootPart
         
-        DisableRayfieldPrompts = false,
-        DisableBuildWarnings = false,
+        local billboardGui = Instance.new("BillboardGui")
+        billboardGui.Name = "Unh0lyHubESP_Status"
+        billboardGui.Adornee = humanoidRootPart
+        billboardGui.Size = UDim2.new(0, 200, 0, 50)
+        billboardGui.StudsOffset = Vector3.new(0, 3, 0)
+        billboardGui.AlwaysOnTop = true
+        billboardGui.Parent = humanoidRootPart
         
-        ConfigurationSaving = {
-            Enabled = true,
-            FolderName = "Unh0lyHub",
-            FileName = "Unh0lyHub_Config"
-        },
+        local statusLabel = Instance.new("TextLabel")
+        statusLabel.Name = "StatusText"
+        statusLabel.Size = UDim2.new(1, 0, 1, 0)
+        statusLabel.BackgroundTransparency = 1
+        statusLabel.Text = "Loading..."
+        statusLabel.TextColor3 = ESPColor
+        statusLabel.TextScaled = true
+        statusLabel.Font = Enum.Font.GothamBold
+        statusLabel.TextStrokeTransparency = 0
+        statusLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        statusLabel.Parent = billboardGui
         
-        KeySystem = false
-    })
+        local function updateStatus()
+            if player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Status") then
+                statusLabel.Text = player.Name .. "\n[" .. player.leaderstats.Status.Value .. "]"
+            else
+                statusLabel.Text = player.Name .. "\n[No Status]"
+            end
+        end
+        
+        updateStatus()
+        
+        if player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Status") then
+            player.leaderstats.Status.Changed:Connect(updateStatus)
+        end
+        
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "Unh0lyHubESP_Highlight"
+        highlight.Adornee = character
+        highlight.FillColor = ESPColor
+        highlight.OutlineColor = ESPColor
+        highlight.FillTransparency = 0.7
+        highlight.OutlineTransparency = 0
+        highlight.Parent = character
+        
+        ESPObjects[player] = {
+            billboard = billboardGui,
+            highlight = highlight,
+            statusLabel = statusLabel,
+            updateStatus = updateStatus
+        }
+    end
     
-    Rayfield:Notify({
-        Title = "Unh0ly-Hub Loaded!",
-        Content = "Welcome to Unh0ly-Hub!",
-        Duration = 5,
-        Image = "shield-check",
-    })
+    local function removeESP(player)
+        if ESPObjects[player] then
+            if ESPObjects[player].billboard then
+                ESPObjects[player].billboard:Destroy()
+            end
+            if ESPObjects[player].highlight then
+                ESPObjects[player].highlight:Destroy()
+            end
+            ESPObjects[player] = nil
+        end
+    end
     
-    local DashboardTab = Window:CreateTab("Dashboard", "home")
+    local function updateESPColor()
+        for player, objects in pairs(ESPObjects) do
+            if objects.highlight then
+                objects.highlight.FillColor = ESPColor
+                objects.highlight.OutlineColor = ESPColor
+            end
+            if objects.statusLabel then
+                objects.statusLabel.TextColor3 = ESPColor
+            end
+        end
+    end
     
-    local DashboardSection = DashboardTab:CreateSection("Welcome to Unh0ly-Hub")
+    local function toggleESP()
+        if ESPEnabled then
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer then
+                    createESP(player)
+                end
+            end
+            
+            game.Players.PlayerAdded:Connect(function(player)
+                if ESPEnabled then
+                    player.CharacterAdded:Connect(function()
+                        wait(1)
+                        if ESPEnabled then
+                            createESP(player)
+                        end
+                    end)
+                end
+            end)
+            
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer then
+                    player.CharacterAdded:Connect(function()
+                        wait(1)
+                        if ESPEnabled then
+                            createESP(player)
+                        end
+                    end)
+                end
+            end
+            
+        else
+            for player, _ in pairs(ESPObjects) do
+                removeESP(player)
+            end
+        end
+    end
     
-    local WelcomeParagraph = DashboardTab:CreateParagraph({
-        Title = "Welcome to Unh0ly-Hub!",
-        Content = "Unh0ly-Hub delivers lightning-fast auto farming solutions. Configure your auto farm settings and enjoy the features."
-    })
+    local function setupAutoRespawn()
+        local player = game.Players.LocalPlayer
+        
+        if player.Character then
+            local humanoid = player.Character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid.Died:Connect(function()
+                    wait(4)
+                    local args = {{"Respawn"}}
+                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+                end)
+            end
+        end
+        
+        player.CharacterAdded:Connect(function(character)
+            local humanoid = character:WaitForChild("Humanoid")
+            humanoid.Died:Connect(function()
+                wait(4)
+                local args = {{"Respawn"}}
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+            end)
+        end)
+    end
     
-    local StatsSection = DashboardTab:CreateSection("Hub Statistics")
+    local function setupAntiAFK()
+        local vu = game:GetService("VirtualUser")
+        game:GetService("Players").LocalPlayer.Idled:Connect(function()
+            vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            wait(1)
+            vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        end)
+    end
     
-    local PlayersLabel = DashboardTab:CreateLabel("Players in Server: " .. #game.Players:GetPlayers(), "users")
-    local PingLabel = DashboardTab:CreateLabel("Ping: " .. game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() .. "ms", "wifi")
-    local FPSLabel = DashboardTab:CreateLabel("FPS: " .. math.floor(1/game:GetService("RunService").Heartbeat:Wait()), "monitor")
-    
-    local SystemInfoSection = DashboardTab:CreateSection("System Information")
-    
-    local ExecutorLabel = DashboardTab:CreateLabel("Executor: " .. getExecutorName(), "cpu")
-    local GameLabel = DashboardTab:CreateLabel("Game: " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name, "gamepad-2")
-    
-    local AutoSystemsSection = DashboardTab:CreateSection("Auto Systems Status")
-    
-    local AutoRespawnLabel = DashboardTab:CreateLabel("Auto Respawn (4s): ACTIVE", "refresh-cw")
-    local AntiAFKLabel = DashboardTab:CreateLabel("Anti AFK: ACTIVE", "shield-check")
-    local AntiBlurLabel = DashboardTab:CreateLabel("Anti Blur: ACTIVE", "eye-off")
+    setupAutoRespawn()
+    setupAntiAFK()
     
     local TypeHubTheme = {
         TextColor = Color3.fromRGB(255, 255, 255),
@@ -171,13 +284,41 @@
         return Vector3.new(0, 0, 0)
     end
     
+    local Window = Rayfield:CreateWindow({
+        Name = "Unh0ly Hub",
+        Icon = "shield-check",
+        LoadingTitle = "Unh0ly Hub Loading...",
+        LoadingSubtitle = "Loading...",
+        Theme = TypeHubTheme,
+        
+        ToggleUIKeybind = "K",
+        
+        DisableRayfieldPrompts = false,
+        DisableBuildWarnings = false,
+        
+        ConfigurationSaving = {
+            Enabled = true,
+            FolderName = "Unh0lyHub",
+            FileName = "Unh0lyHub_Config"
+        },
+        
+        KeySystem = false
+    })
+    
+    Rayfield:Notify({
+        Title = "Unh0ly Hub Loaded!",
+        Content = "Welcome! The script is ready to use.",
+        Duration = 5,
+        Image = "shield-check",
+    })
+    
     local DashboardTab = Window:CreateTab("Dashboard", "home")
     
-    local DashboardSection = DashboardTab:CreateSection("Welcome to Unh0ly-Hub")
+    local DashboardSection = DashboardTab:CreateSection("Welcome to Unh0ly Hub")
     
     local WelcomeParagraph = DashboardTab:CreateParagraph({
-        Title = "Welcome to Unh0ly-Hub!",
-        Content = "Unh0ly-Hub delivers lightning-fast auto farming solutions. Configure your auto farm settings and enjoy the features."
+        Title = "Welcome to Unh0ly Hub!",
+        Content = "Unh0ly Hub delivers lightning-fast auto farming solutions."
     })
     
     local StatsSection = DashboardTab:CreateSection("Hub Statistics")
@@ -191,6 +332,12 @@
     local ExecutorLabel = DashboardTab:CreateLabel("Executor: " .. getExecutorName(), "cpu")
     local GameLabel = DashboardTab:CreateLabel("Game: " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name, "gamepad-2")
     
+    local AuthSection = DashboardTab:CreateSection("Authentication Status")
+    
+    local AuthStatusLabel = DashboardTab:CreateLabel("Status: AUTHENTICATED", "shield-check")
+    local SessionLabel = DashboardTab:CreateLabel("Session: Active", "clock")
+    local HWIDLabel = DashboardTab:CreateLabel("HWID: Protected", "key")
+    
     local AutoSystemsSection = DashboardTab:CreateSection("Auto Systems Status")
     
     local AutoRespawnLabel = DashboardTab:CreateLabel("Auto Respawn (4s): ACTIVE", "refresh-cw")
@@ -203,6 +350,14 @@
             PlayersLabel:Set("Players in Server: " .. #game.Players:GetPlayers(), "users")
             PingLabel:Set("Ping: " .. math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()) .. "ms", "wifi")
             FPSLabel:Set("FPS: " .. math.floor(1/game:GetService("RunService").Heartbeat:Wait()), "monitor")
+            
+            if isAuthenticated then
+                AuthStatusLabel:Set("Status: AUTHENTICATED", "shield-check")
+                SessionLabel:Set("Session: Active (" .. math.floor((tick() - lastAuthCheck)/60) .. "m ago)", "clock")
+            else
+                AuthStatusLabel:Set("Status: EXPIRED", "shield-x")
+                SessionLabel:Set("Session: Expired", "x")
+            end
         end
     end)
     
@@ -919,7 +1074,7 @@
             local player = game.Players.LocalPlayer
             if player:FindFirstChild("PrivateStats") then
                 local stats = player.PrivateStats
-                local statsText = "Type Hub - Player Stats:\n"
+                local statsText = "Unh0ly Hub - Player Stats:\n"
                 
                 if stats:FindFirstChild("FSAuraUnlocked") then
                     statsText = statsText .. "Fist Aura: " .. tostring(getSafeValue(stats.FSAuraUnlocked, "Unknown")) .. "\n"
@@ -1056,12 +1211,12 @@
     
     local ThemeDropdown = SettingsTab:CreateDropdown({
         Name = "UI Theme",
-        Options = {"Unh0ly Custom", "Default", "Ocean", "Serenity", "Amethyst"},
-        CurrentOption = {"Unh0ly Custom"},
+        Options = {"Unh0ly Hub Custom", "Default", "Ocean", "Serenity", "Amethyst"},
+        CurrentOption = {"Unh0ly Hub Custom"},
         MultipleOptions = false,
         Flag = "Theme",
         Callback = function(Options)
-            if Options[1] == "Unh0ly Custom" then
+            if Options[1] == "Unh0ly Hub Custom" then
                 Window.ModifyTheme(TypeHubTheme)
             else
                 Window.ModifyTheme(Options[1])
@@ -1084,7 +1239,7 @@
         end,
     })
     
-
+    
     spawn(function()
         while true do
             wait(0.05)
