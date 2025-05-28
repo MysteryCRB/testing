@@ -1184,11 +1184,10 @@
     
     spawn(function()
         while true do
-            wait(0.01) -- Extremely fast tick rate
+            wait(0.1) -- Keep normal tick rate for stability
             
-            if BoostSpamming then
-                -- Fire all stat upgrades simultaneously
-                if AutoFarmBT then
+            if AutoFarmBT then
+                for i = 1, 10000 do -- 10000x multiplier
                     local args = {
                         {
                             "+BT" .. BTLevel
@@ -1196,8 +1195,10 @@
                     }
                     game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
                 end
-                
-                if AutoFarmFS then
+            end
+            
+            if AutoFarmFS then
+                for i = 1, 10000 do -- 10000x multiplier
                     local args = {
                         {
                             "+FS" .. FSLevel
@@ -1205,8 +1206,10 @@
                     }
                     game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
                 end
-                
-                if AutoFarmPP then
+            end
+            
+            if AutoFarmPP then
+                for i = 1, 10000 do -- 10000x multiplier
                     local args = {
                         {
                             "+PP" .. PPLevel
@@ -1214,8 +1217,10 @@
                     }
                     game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
                 end
-                
-                if AutoFarmJF then
+            end
+            
+            if AutoFarmJF then
+                for i = 1, 10000 do -- 10000x multiplier
                     local args = {
                         {
                             "+JF" .. JFLevel
@@ -1223,8 +1228,10 @@
                     }
                     game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
                 end
-                
-                if AutoFarmMS then
+            end
+            
+            if AutoFarmMS then
+                for i = 1, 10000 do -- 10000x multiplier
                     local args = {
                         {
                             "+MS" .. MSLevel
