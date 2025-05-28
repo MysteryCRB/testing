@@ -77,6 +77,7 @@
     local BoostMultiplier = 1
     local deathLoop = nil
     local lastLocation = nil
+    local player = game.Players.LocalPlayer
     
     local SpherePunchSpamming = false
     local SpherePunchNotified = false
@@ -239,25 +240,27 @@
         CurrentValue = false,
         Flag = "BoostMode",
         Callback = function(Value)
-            BoostMode = Value
-            toggleStackXBoost(Value)
-            if Value then
-                BoostStatusLabel:Set("Boost Status: Enabled (StackX)", "zap")
-                Rayfield:Notify({
-                    Title = "StackX Boost Enabled!",
-                    Content = "Stats are now boosted using StackX method",
-                    Duration = 3,
-                    Image = "zap",
-                })
-            else
-                BoostStatusLabel:Set("Boost Status: Disabled", "zap")
-                Rayfield:Notify({
-                    Title = "StackX Boost Disabled!",
-                    Content = "Stats are now at normal rate",
-                    Duration = 3,
-                    Image = "square",
-                })
-            end
+            pcall(function()
+                BoostMode = Value
+                toggleStackXBoost(Value)
+                if Value then
+                    BoostStatusLabel:Set("Boost Status: Enabled (StackX)", "zap")
+                    Rayfield:Notify({
+                        Title = "StackX Boost Enabled!",
+                        Content = "Stats are now boosted using StackX method",
+                        Duration = 3,
+                        Image = "zap",
+                    })
+                else
+                    BoostStatusLabel:Set("Boost Status: Disabled", "zap")
+                    Rayfield:Notify({
+                        Title = "StackX Boost Disabled!",
+                        Content = "Stats are now at normal rate",
+                        Duration = 3,
+                        Image = "square",
+                    })
+                end
+            end)
         end,
     })
     
@@ -1417,7 +1420,7 @@
     -- Function to update last location
     local function updateLastLocation()
         while true do
-            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                 lastLocation = player.Character.HumanoidRootPart.Position
             end
             wait(5)
@@ -1431,20 +1434,28 @@
             if deathLoop then return end
             deathLoop = task.spawn(function()
                 while true do
-                    -- Wait for character to spawn
-                    repeat wait() until player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+                    if not player or not player.Character then
+                        wait(1)
+                        continue
+                    end
                     
                     local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                    if not humanoid then
+                        wait(1)
+                        continue
+                    end
                     
                     -- Wait until Humanoid is fully loaded
-                    repeat wait() until humanoid and humanoid.Health > 0
+                    if humanoid.Health <= 0 then
+                        wait(1)
+                        continue
+                    end
                     
                     -- Kill player
-                    while humanoid.Health > 0 do
+                    pcall(function()
                         humanoid:TakeDamage(humanoid.MaxHealth)
                         humanoid.Health = 0
-                        wait(0.1)
-                    end
+                    end)
                     
                     wait(9) -- Loop duration
                 end
@@ -1460,31 +1471,55 @@
     -- Function to respawn character after death
     local function respawnLoop()
         while true do
-            repeat wait() until player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+            if not player or not player.Character then
+                wait(1)
+                continue
+            end
             
             local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            if not humanoid then
+                wait(1)
+                continue
+            end
             
-            if humanoid and humanoid.Health <= 0 then
+            if humanoid.Health <= 0 then
                 wait(1)
                 
                 -- Respawn process
-                local remoteEvent = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvent")
-                if remoteEvent then
-                    remoteEvent:FireServer({[1] = "Respawn"})
-                end
+                pcall(function()
+                    local remoteEvent = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvent")
+                    if remoteEvent then
+                        remoteEvent:FireServer({[1] = "Respawn"})
+                    end
+                end)
                 
                 -- Reset UI settings
                 wait(1)
-                game.Lighting.Blur.Enabled = false
-                game.Players.LocalPlayer.PlayerGui.IntroGui.Enabled = false
-                game.Players.LocalPlayer.PlayerGui.ScreenGui.Enabled = true
+                pcall(function()
+                    game.Lighting.Blur.Enabled = false
+                    if player.PlayerGui then
+                        if player.PlayerGui:FindFirstChild("IntroGui") then
+                            player.PlayerGui.IntroGui.Enabled = false
+                        end
+                        if player.PlayerGui:FindFirstChild("ScreenGui") then
+                            player.PlayerGui.ScreenGui.Enabled = true
+                        end
+                    end
+                end)
                 
                 -- Wait until new character is loaded
-                repeat wait(0.1) until player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                repeat 
+                    wait(0.1)
+                    if not player or not player.Character then
+                        break
+                    end
+                until player.Character:FindFirstChild("HumanoidRootPart")
                 
                 -- Teleport to last location
-                if lastLocation then
-                    player.Character.HumanoidRootPart.CFrame = CFrame.new(lastLocation)
+                if lastLocation and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    pcall(function()
+                        player.Character.HumanoidRootPart.CFrame = CFrame.new(lastLocation)
+                    end)
                 end
             end
             
