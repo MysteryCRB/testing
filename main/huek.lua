@@ -58,7 +58,6 @@
     local lastFireTime = 0
     local minDelay = 0.1
     local maxDelay = 0.3
-    local levelVariation = 1
     
     local function generateOptions(min, max)
         local options = {}
@@ -244,7 +243,7 @@
                 local success, err = pcall(function()
                     local args = {
                         {
-                            prefix .. math.random(math.max(1, level - levelVariation), math.min(level + levelVariation, 32))
+                            prefix .. tostring(level)
                         }
                     }
                     RemoteEvent:FireServer(unpack(args))
