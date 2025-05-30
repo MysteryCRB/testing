@@ -1,11 +1,9 @@
--- Unh0ly Hub - Stats Booster
+
+-- Unh0ly Hub - Stats Booster with Auto Respawn
 (function()
-    local HttpService = game:GetService("HttpService")
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
-    
-    -- Load Rayfield UI
-    local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
     
     -- Number formatting function
     local function formatNumber(n)
@@ -34,12 +32,8 @@
         end
     end
     
-    local function getSafeValue(obj, default)
-        if obj and obj.Value ~= nil then
-            return obj.Value
-        end
-        return default or 0
-    end
+    -- Load Rayfield UI
+    local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
     
     -- Auto Farm Variables
     local AutoFarmBT = false
@@ -56,8 +50,9 @@
     
     -- Detection avoidance variables
     local lastFireTime = 0
-    local minDelay = 0.1
-    local maxDelay = 0.3
+    local minDelay = 0.2
+    local maxDelay = 0.5
+    local levelVariation = 1
     
     local function generateOptions(min, max)
         local options = {}
@@ -144,7 +139,7 @@
                 if Value then
                     Rayfield:Notify({
                         Title = name .. " Auto Farm Started!",
-                        Content = "Auto farming " .. name .. " level " .. _G[name .. "Level"],
+                        Content = "Auto farming " .. name .. " level " .. _G[name .. "Level"] .. " (±1 variation)",
                         Duration = 3,
                         Image = "zap",
                     })
@@ -163,98 +158,104 @@
     end
     
     -- Create farm sections with tooltips
-    local BTSection, BTDropdown, BTToggle = createFarmSection("BT", "Boost Time - Increases your boost duration", 32)
-    local FSSection, FSDropdown, FSToggle = createFarmSection("FS", "Fire Speed - Increases your attack speed", 32)
-    local PPSection, PPDropdown, PPToggle = createFarmSection("PP", "Power Points - Increases your overall power", 32)
-    local JFSection, JFDropdown, JFToggle = createFarmSection("JF", "Jump Force - Increases your jump height", 27)
-    local MSSection, MSDropdown, MSToggle = createFarmSection("MS", "Move Speed - Increases your movement speed", 27)
+    local BTSection, BTDropdown, BTToggle = createFarmSection("BT", "Body Toughness - Increases durability", 32)
+    local FSSection, FSDropdown, FSToggle = createFarmSection("FS", "Fist Strength - Increases attack power", 32)
+    local PPSection, PPDropdown, PPToggle = createFarmSection("PP", "Psychic Power - Increases mental abilities", 32)
+    local JFSection, JFDropdown, JFToggle = createFarmSection("JF", "Jump Force - Increases jump height", 27)
+    local MSSection, MSDropdown, MSToggle = createFarmSection("MS", "Movement Speed - Increases speed", 27)
     
-    -- Settings Tab
-    local SettingsTab = Window:CreateTab("Settings", "settings")
+    -- Find RemoteEvent dynamically
+    local RemoteEvent = nil
+    for _, v in pairs(ReplicatedStorage:GetChildren()) do
+        if v:IsA("RemoteEvent") then
+            RemoteEvent = v
+            break
+        end
+    end
     
-    local UISection = SettingsTab:CreateSection("Interface Settings")
-    
-    local UIToggleKeybind = SettingsTab:CreateKeybind({
-        Name = "Toggle UI Keybind",
-        CurrentKeybind = "K",
-        HoldToInteract = false,
-        Flag = "UIKeybind",
-        Callback = function(Keybind)
-        end,
-    })
-    
-    local ThemeSection = SettingsTab:CreateSection("Theme Settings")
-    
-    local ThemeDropdown = SettingsTab:CreateDropdown({
-        Name = "UI Theme",
-        Options = {"Unh0ly Hub Custom", "Default", "Ocean", "Serenity", "Amethyst"},
-        CurrentOption = {"Unh0ly Hub Custom"},
-        MultipleOptions = false,
-        Flag = "Theme",
-        Callback = function(Options)
-            if Options[1] == "Unh0ly Hub Custom" then
-                Window.ModifyTheme(TypeHubTheme)
-            else
-                Window.ModifyTheme(Options[1])
+    -- Log available RemoteEvents
+    local function logRemotes()
+        local remotes = {}
+        for _, v in pairs(ReplicatedStorage:GetChildren()) do
+            if v:IsA("RemoteEvent") then
+                remotes[#remotes + 1] = v.Name
             end
-        end,
-    })
+        end
+        warn("Available RemoteEvents: " .. table.concat(remotes, ", "))
+    end
+    logRemotes()
     
-    local ConfigSection = SettingsTab:CreateSection("Configuration")
-    
-    local SaveConfigButton = SettingsTab:CreateButton({
-        Name = "Save Configuration",
-        Callback = function()
-            Rayfield:SaveConfiguration()
-            Rayfield:Notify({
-                Title = "Configuration Saved!",
-                Content = "Your settings have been saved successfully",
-                Duration = 3,
-                Image = "save",
-            })
-        end,
-    })
+    -- Setup Auto Respawn
+    local function setupAutoRespawn()
+        local player = LocalPlayer
+        if player.Character then
+            local humanoid = player.Character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid.Died:Connect(function()
+                    wait(4)
+                    if RemoteEvent then
+                        local args = {{"Respawn"}}
+                        RemoteEvent:FireServer(unpack(args))
+                        warn("Fired: Respawn")
+                    end
+                end)
+            end
+        end
+        player.CharacterAdded:Connect(function(character)
+            local humanoid = character:WaitForChild("Humanoid")
+            humanoid.Died:Connect(function()
+                wait(4)
+                if RemoteEvent then
+                    local args = {{"Respawn"}}
+                    RemoteEvent:FireServer(unpack(args))
+                    warn("Fired: Respawn")
+                end
+            end)
+        end)
+    end
+    setupAutoRespawn()
     
     -- Auto Farm Loop with detection avoidance
     spawn(function()
         while true do
-            -- Random delay between actions
             wait(math.random(minDelay * 1000, maxDelay * 1000) / 1000)
             
-            -- Check if RemoteEvent exists
-            local RemoteEvent = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvent")
             if not RemoteEvent then 
-                warn("RemoteEvent not found! Waiting for it to appear...")
-                wait(1)
+                Rayfield:Notify({
+                    Title = "Error!",
+                    Content = "No RemoteEvent found. Check console for available events.",
+                    Duration = 5,
+                    Image = "alert-circle",
+                })
+                logRemotes()
+                wait(2)
                 continue 
             end
             
-            -- Get current time for rate limiting
             local currentTime = tick()
             if currentTime - lastFireTime < minDelay then
                 continue
             end
-            
-            -- Update last fire time
             lastFireTime = currentTime
             
-            -- Function to safely fire remote with error handling
             local function safeFireRemote(prefix, level)
                 local success, err = pcall(function()
-                    local args = {
-                        {
-                            prefix .. tostring(level)
-                        }
-                    }
+                    local effectiveLevel = math.random(math.max(1, level - levelVariation), math.min(level + levelVariation, prefix == "+JF" or prefix == "+MS" and 27 or 32))
+                    local args = {{prefix .. effectiveLevel}}
                     RemoteEvent:FireServer(unpack(args))
+                    warn("Fired: " .. args[1][1])
                 end)
-                
                 if not success then
-                    warn("Failed to fire remote: " .. tostring(err))
+                    Rayfield:Notify({
+                        Title = "Error!",
+                        Content = "Failed to fire: " .. tostring(err),
+                        Duration = 5,
+                        Image = "alert-circle",
+                    })
+                    warn("Failed to fire: " .. tostring(err))
                 end
             end
             
-            -- Check and fire each farm type
             if AutoFarmBT then safeFireRemote("+BT", BTLevel) end
             if AutoFarmFS then safeFireRemote("+FS", FSLevel) end
             if AutoFarmPP then safeFireRemote("+PP", PPLevel) end
