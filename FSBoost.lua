@@ -2,32 +2,42 @@ _G.cum = true
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RemoteEvent = ReplicatedStorage.RemoteEvent
 
--- Initial setup for Fist strength
+local function fireEvent(args)
+    RemoteEvent:FireServer(unpack(args))
+end
+
+-- Başlangıçta FireServer işlemi
 local args = {
     [1] = {
         [1] = "Fist",
         [2] = "Fist1"
     }
 }
-RemoteEvent:FireServer(unpack(args))
+fireEvent(args)
 
--- Main loop for strength boosting
 while _G.cum do
-    -- Send multiple commands per loop for moderate speed
-    for i = 1, 5 do  -- Sends 5 commands per loop
-        local args = {
-            [1] = {
-                [1] = "+FS20"
-            }
+    local args = {
+        [1] = {
+            [1] = "+FS22"
         }
-        RemoteEvent:FireServer(unpack(args))
-    end
+    }
+    fireEvent(args)
     
-    -- Moderate delay to prevent kicks
-    task.wait(0.1)  -- 100ms delay
+    -- Daha hızlı bir şekilde işlem yapabilmek için task.wait() yerine Heartbeat kullanılabilir
+    game:GetService("RunService").Heartbeat:Wait() -- Bu, sunucuyu etkilemeden hız sağlar
+    
+    -- Boş parametre ile FireServer işlemi
+    args = {
+        [1] = {
+            [1] = ""
+        }
+    }
+    fireEvent(args)
+    
+    -- Tekrar hızlandırmak için task.wait() kullanımı optimize edilebilir
+    task.wait(0.00001) -- Kısa bekleme süresi ile işlem hızlanır
 end
 
--- Cleanup when stopped
 if not _G.cum then
     local args = {
         [1] = {
@@ -35,5 +45,5 @@ if not _G.cum then
             [2] = ""
         }
     }
-    RemoteEvent:FireServer(unpack(args))
-end 
+    fireEvent(args)
+end
