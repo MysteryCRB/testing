@@ -437,7 +437,7 @@ local Button = OtherTab:CreateButton({
     end,
 })
 local Button = OtherTab:CreateButton({
-    Name = "Fist1.8Qid",
+    Name = "Fist280Sxd",
     Callback = function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/MysteryCRB/testing/refs/heads/main/FSBoost.lua", true))()
     end,
