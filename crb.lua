@@ -47,7 +47,7 @@ local Button = MainTab:CreateButton({
 local Button = MainTab:CreateButton({
     Name = "Body(8X-12X)",
     Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/asdasdasd/refs/heads/main/ASDASDFEGHWER", true))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/MysteryCRB/testing/refs/heads/main/btb.lua", true))()
     end,
 })
 local Button = MainTab:CreateButton({
