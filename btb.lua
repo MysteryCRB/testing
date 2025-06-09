@@ -9,8 +9,8 @@ end
 -- Başlangıçta FireServer işlemi
 local args = {
     [1] = {
-        [1] = "Psychic",
-        [2] = "Psychic3"
+        [1] = "Body",
+        [2] = "Body2"
     }
 }
 fireEvent(args)
@@ -18,12 +18,12 @@ fireEvent(args)
 while _G.cum do
     local args = {
         [1] = {
-            [1] = "+PP22"
+            [1] = "+BT29"
         }
     }
     fireEvent(args)
     
-    -- Daha hızlı ve sunucu dostu işlem için Heartbeat kullanımı
+    -- Hızlı ve sunucu dostu işlem için Heartbeat kullanımı
     game:GetService("RunService").Heartbeat:Wait() -- Bu, çok daha hızlı çalışır ve sunucuyu etkilemez
     
     -- Boş parametre ile FireServer işlemi
@@ -34,8 +34,8 @@ while _G.cum do
     }
     fireEvent(args)
     
-    -- task.wait() ile işlemi hızlandırma
-    task.wait(0.001) -- Kısa bekleme süresi ile işlem hızlanır
+    -- task.wait() kullanımı daha kısa sürede yapılabilir
+    task.wait(0.0001) -- Kısa bekleme süresi ile işlem hızlanır
 end
 
 if not _G.cum then
