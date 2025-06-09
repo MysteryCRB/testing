@@ -53,7 +53,7 @@ local Button = MainTab:CreateButton({
 local Button = MainTab:CreateButton({
     Name = "Psychic(10X-15X)",
     Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/luadevmodded/refs/heads/main/PS", true))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/MysteryCRB/testing/refs/heads/main/huek.lua", true))()
     end,
 })
 local Button = MainTab:CreateButton({
