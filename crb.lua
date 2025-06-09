@@ -41,7 +41,7 @@ local Label = MainTab:CreateLabel("Last Training Areas (Faster)", 0, Color3.from
 local Button = MainTab:CreateButton({
     Name = "Fist(10X-15X)",
     Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/asdasdasd/refs/heads/main/ASDASD", true))()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/MysteryCRB/testing/refs/heads/main/FSBoost.lua", true))()
     end,
 })
 local Button = MainTab:CreateButton({
