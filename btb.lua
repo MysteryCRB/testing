@@ -18,7 +18,7 @@ fireEvent(args)
 while _G.cum do
     local args = {
         [1] = {
-            [1] = "+BT30"
+            [1] = "+BT31"
         }
     }
     fireEvent(args)
