@@ -59,7 +59,7 @@ local Button = MainTab:CreateButton({
 local Button = MainTab:CreateButton({
     Name = "MS/JF(5X-10X)",
     Callback = function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/massthix/refs/heads/main/speed", true))()
+        loadstring(game:HttpGet("https://github.com/MysteryCRB/testing/raw/refs/heads/main/ms.lua", true))()
     end,
 })
 local Button = MiscTab:CreateButton({
