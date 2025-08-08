@@ -1,7 +1,14 @@
 -- SPTS Classic All-In-One Exploit Script
 -- Rayfield UI Implementation
 
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local success, Rayfield = pcall(function()
+    return loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
+end)
+
+if not success then
+    -- Fallback to alternative UI library
+    Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+end
 
 local Window = Rayfield:CreateWindow("SPTS Classic Exploit", "All-In-One Script")
 
