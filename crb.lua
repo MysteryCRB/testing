@@ -240,7 +240,7 @@
             
             local function safeFireRemote(prefix, level)
                 local success, err = pcall(function()
-                    local effectiveLevel = math.random(math.max(1, level - levelVariation), math.min(level + levelVariation, prefix == "+JF" or prefix == "+MS" and 27 or 32))
+                    local effectiveLevel = math.random(math.max(1, level - levelVariation), math.min(level + levelVariation, prefix == "+JF" or prefix == "+MS" and 5 or 5))
                     local args = {{prefix .. effectiveLevel}}
                     RemoteEvent:FireServer(unpack(args))
                     warn("Fired: " .. args[1][1])
@@ -268,3 +268,4 @@
     Rayfield:LoadConfiguration()
     
 end)()
+
