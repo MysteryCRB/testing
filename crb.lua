@@ -204,17 +204,7 @@
         end)
     end
     
-    local function setupAntiAFK()
-        local vu = game:GetService("VirtualUser")
-        game:GetService("Players").LocalPlayer.Idled:Connect(function()
-            vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-            wait(1)
-            vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-        end)
-    end
-    
     setupAutoRespawn()
-    setupAntiAFK()
     
     local TypeHubTheme = {
         TextColor = Color3.fromRGB(255, 255, 255),
@@ -362,7 +352,6 @@
     local AutoSystemsSection = DashboardTab:CreateSection("Auto Systems Status")
     
     local AutoRespawnLabel = DashboardTab:CreateLabel("Auto Respawn (4s): ACTIVE", "refresh-cw")
-    local AntiAFKLabel = DashboardTab:CreateLabel("Anti AFK: ACTIVE", "shield-check")
     local AntiBlurLabel = DashboardTab:CreateLabel("Anti Blur: ACTIVE", "eye-off")
     
     spawn(function()
@@ -1354,53 +1343,130 @@
         end
     end)
     
+    -- Initialize stat farming variables
+    local BTInitialized = false
+    local FSInitialized = false
+    local PPInitialized = false
+    local MSInitialized = false
+    local JFInitialized = false
+    
     spawn(function()
         while true do
             wait(0.1)
             
             if AutoFarmBT then
+                if not BTInitialized then
+                    -- Initialize BT farming
+                    local args = {
+                        {
+                            "Body",
+                            "Body" .. BTLevel
+                        }
+                    }
+                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+                    BTInitialized = true
+                end
+                
                 local args = {
                     {
                         "+BT" .. BTLevel
                     }
                 }
                 game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+            else
+                BTInitialized = false
             end
             
             if AutoFarmFS then
+                if not FSInitialized then
+                    -- Initialize FS farming
+                    local args = {
+                        {
+                            "Fist",
+                            "Fist" .. FSLevel
+                        }
+                    }
+                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+                    FSInitialized = true
+                end
+                
                 local args = {
                     {
                         "+FS" .. FSLevel
                     }
                 }
                 game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+            else
+                FSInitialized = false
             end
             
             if AutoFarmPP then
+                if not PPInitialized then
+                    -- Initialize PP farming
+                    local args = {
+                        {
+                            "Psychic",
+                            "Psychic" .. PPLevel
+                        }
+                    }
+                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+                    PPInitialized = true
+                end
+                
                 local args = {
                     {
                         "+PP" .. PPLevel
                     }
                 }
                 game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            end
-            
-            if AutoFarmJF then
-                local args = {
-                    {
-                        "+JF" .. JFLevel
-                    }
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+            else
+                PPInitialized = false
             end
             
             if AutoFarmMS then
+                if not MSInitialized then
+                    -- Initialize MS farming
+                    local args = {
+                        {
+                            "Weight",
+                            "Weight" .. MSLevel
+                        }
+                    }
+                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+                    MSInitialized = true
+                end
+                
                 local args = {
                     {
                         "+MS" .. MSLevel
                     }
                 }
                 game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+            else
+                MSInitialized = false
+            end
+            
+            if AutoFarmJF then
+                if not JFInitialized then
+                    -- Initialize JF farming (same as MS since they're related)
+                    local args = {
+                        {
+                            "Weight",
+                            "Weight" .. JFLevel
+                        }
+                    }
+                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+                    JFInitialized = true
+                end
+                
+                local args = {
+                    {
+                        "+JF" .. JFLevel
+                    }
+                }
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
+            else
+                JFInitialized = false
             end
         end
     end)
