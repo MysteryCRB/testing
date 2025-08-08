@@ -1,9 +1,13 @@
--- Type Hub Free Version
+-- Type Hub Protected Version with Server Authentication
 (function()
+    local HttpService = game:GetService("HttpService")
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
     
-    -- Получение имени экзекьютора
+    -- Script configuration
+    local SCRIPT_VERSION = "1.2"
+    
+    -- Get executor name
     local function getExecutorName()
         if syn then return "Synapse X"
         elseif KRNL_LOADED then return "KRNL"
@@ -19,7 +23,39 @@
         end
     end
     
-    -- Загрузка Rayfield
+    -- Защита от отладки
+    local function antiDebug()
+        local blacklist = {"Dex", "RemoteSpy", "SimpleSpy", "IY", "Infinite Yield", "Dark Dex", "Explorer"}
+        for _, tool in pairs(blacklist) do
+            if game:GetService("CoreGui"):FindFirstChild(tool) then
+                LocalPlayer:Kick("Debug tool detected")
+                return
+            end
+        end
+    end
+    
+    -- Проверка скорости выполнения
+    local function speedCheck()
+        local startTime = tick()
+        wait(0.05)
+        if tick() - startTime > 0.2 then
+            LocalPlayer:Kick("Execution anomaly detected")
+            return
+        end
+    end
+    
+    -- Initialize protection
+    speedCheck()
+    
+    -- Continuous monitoring
+    spawn(function()
+        while true do
+            antiDebug()
+            wait(3)
+        end
+    end)
+    
+    -- Load Rayfield UI
     local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
     
     -- Number formatting function
@@ -290,10 +326,10 @@
     end
     
     local Window = Rayfield:CreateWindow({
-        Name = "Type Hub [FREE]",
+        Name = "Type Hub",
         Icon = "zap",
         LoadingTitle = "Type Hub Loading...",
-        LoadingSubtitle = "Free Version Active",
+        LoadingSubtitle = "Loading Script...",
         Theme = TypeHubTheme,
         
         ToggleUIKeybind = "K",
@@ -318,7 +354,7 @@
     
     Rayfield:Notify({
         Title = "Type Hub Loaded!",
-        Content = "Welcome! Free version is ready to use.",
+        Content = "Welcome! Script is ready to use.",
         Duration = 5,
         Image = "zap",
     })
@@ -343,11 +379,7 @@
     local ExecutorLabel = DashboardTab:CreateLabel("Executor: " .. getExecutorName(), "cpu")
     local GameLabel = DashboardTab:CreateLabel("Game: " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name, "gamepad-2")
     
-    local StatusSection = DashboardTab:CreateSection("Script Status")
-    
-    local StatusLabel = DashboardTab:CreateLabel("Status: ACTIVE", "zap")
-    local VersionLabel = DashboardTab:CreateLabel("Version: Free", "info")
-    local ExecutorLabel = DashboardTab:CreateLabel("Executor: " .. getExecutorName(), "cpu")
+
     
     local AutoSystemsSection = DashboardTab:CreateSection("Auto Systems Status")
     
@@ -360,9 +392,6 @@
             PlayersLabel:Set("Players in Server: " .. #game.Players:GetPlayers(), "users")
             PingLabel:Set("Ping: " .. math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()) .. "ms", "wifi")
             FPSLabel:Set("FPS: " .. math.floor(1/game:GetService("RunService").Heartbeat:Wait()), "monitor")
-            
-            StatusLabel:Set("Status: ACTIVE", "zap")
-            VersionLabel:Set("Version: Free", "info")
         end
     end)
     
@@ -1343,130 +1372,53 @@
         end
     end)
     
-    -- Initialize stat farming variables
-    local BTInitialized = false
-    local FSInitialized = false
-    local PPInitialized = false
-    local MSInitialized = false
-    local JFInitialized = false
-    
     spawn(function()
         while true do
             wait(0.1)
             
             if AutoFarmBT then
-                if not BTInitialized then
-                    -- Initialize BT farming
-                    local args = {
-                        {
-                            "Body",
-                            "Body" .. BTLevel
-                        }
-                    }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                    BTInitialized = true
-                end
-                
                 local args = {
                     {
                         "+BT" .. BTLevel
                     }
                 }
                 game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            else
-                BTInitialized = false
             end
             
             if AutoFarmFS then
-                if not FSInitialized then
-                    -- Initialize FS farming
-                    local args = {
-                        {
-                            "Fist",
-                            "Fist" .. FSLevel
-                        }
-                    }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                    FSInitialized = true
-                end
-                
                 local args = {
                     {
                         "+FS" .. FSLevel
                     }
                 }
                 game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            else
-                FSInitialized = false
             end
             
             if AutoFarmPP then
-                if not PPInitialized then
-                    -- Initialize PP farming
-                    local args = {
-                        {
-                            "Psychic",
-                            "Psychic" .. PPLevel
-                        }
-                    }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                    PPInitialized = true
-                end
-                
                 local args = {
                     {
                         "+PP" .. PPLevel
                     }
                 }
                 game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            else
-                PPInitialized = false
-            end
-            
-            if AutoFarmMS then
-                if not MSInitialized then
-                    -- Initialize MS farming
-                    local args = {
-                        {
-                            "Weight",
-                            "Weight" .. MSLevel
-                        }
-                    }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                    MSInitialized = true
-                end
-                
-                local args = {
-                    {
-                        "+MS" .. MSLevel
-                    }
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            else
-                MSInitialized = false
             end
             
             if AutoFarmJF then
-                if not JFInitialized then
-                    -- Initialize JF farming (same as MS since they're related)
-                    local args = {
-                        {
-                            "Weight",
-                            "Weight" .. JFLevel
-                        }
-                    }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                    JFInitialized = true
-                end
-                
                 local args = {
                     {
                         "+JF" .. JFLevel
                     }
                 }
                 game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            else
-                JFInitialized = false
+            end
+            
+            if AutoFarmMS then
+                local args = {
+                    {
+                        "+MS" .. MSLevel
+                    }
+                }
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
             end
         end
     end)
