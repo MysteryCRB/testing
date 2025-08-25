@@ -1,1428 +1,692 @@
--- Type Hub Protected Version with Server Authentication
-(function()
-    local HttpService = game:GetService("HttpService")
-    local Players = game:GetService("Players")
-    local LocalPlayer = Players.LocalPlayer
-    
-    -- Script configuration
-    local SCRIPT_VERSION = "1.2"
-    
-    -- Get executor name
-    local function getExecutorName()
-        if syn then return "Synapse X"
-        elseif KRNL_LOADED then return "KRNL"
-        elseif getgenv().COMET_LOADED then return "Comet"
-        elseif getgenv().EVON_LOADED then return "Evon"
-        elseif getgenv().WRD_LOADED then return "WeAreDevs"
-        elseif getgenv().OXYGEN_LOADED then return "Oxygen U"
-        elseif getgenv().FLUXUS_LOADED then return "Fluxus"
-        elseif getgenv().DELTA_LOADED then return "Delta"
-        elseif getgenv().WAVE_LOADED then return "Wave"
-        elseif identifyexecutor then return identifyexecutor()
-        else return "Unknown"
-        end
-    end
-    
-    -- Защита от отладки
-    local function antiDebug()
-        local blacklist = {"Dex", "RemoteSpy", "SimpleSpy", "IY", "Infinite Yield", "Dark Dex", "Explorer"}
-        for _, tool in pairs(blacklist) do
-            if game:GetService("CoreGui"):FindFirstChild(tool) then
-                LocalPlayer:Kick("Debug tool detected")
-                return
-            end
-        end
-    end
-    
-    -- Проверка скорости выполнения
-    local function speedCheck()
-        local startTime = tick()
-        wait(0.05)
-        if tick() - startTime > 0.2 then
-            LocalPlayer:Kick("Execution anomaly detected")
-            return
-        end
-    end
-    
-    -- Initialize protection
-    speedCheck()
-    
-    -- Continuous monitoring
-    spawn(function()
-        while true do
-            antiDebug()
-            wait(3)
-        end
-    end)
-    
-    -- Load Rayfield UI
-    local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-    
-    -- Number formatting function
-    local function formatNumber(n)
-        if not n then return "0" end
-        
-        if type(n) == "string" then
-            n = tonumber(n)
-        end
-        
-        if not n or n == 0 then return "0" end
-        
-        local suffixes = {'', 'K', 'M', 'B', 'T', 'Qa', 'Qi'}
-        local index = 1
-        
-        while n >= 1000 and index < #suffixes do
-            n = n / 1000
-            index = index + 1
-        end
-        
-        if n >= 100 then
-            return string.format('%.0f%s', n, suffixes[index])
-        elseif n >= 10 then
-            return string.format('%.1f%s', n, suffixes[index])
-        else
-            return string.format('%.2f%s', n, suffixes[index])
-        end
-    end
-    
-    local function getSafeValue(obj, default)
-        if obj and obj.Value ~= nil then
-            return obj.Value
-        end
-        return default or 0
-    end
-    
-    local ESPEnabled = false
-    local ESPColor = Color3.fromRGB(255, 210, 95)
-    local ESPObjects = {}
-    
-    local function createESP(player)
-        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-            return
-        end
-        
-        local character = player.Character
-        local humanoidRootPart = character.HumanoidRootPart
-        
-        local billboardGui = Instance.new("BillboardGui")
-        billboardGui.Name = "TypeHubESP_Status"
-        billboardGui.Adornee = humanoidRootPart
-        billboardGui.Size = UDim2.new(0, 200, 0, 50)
-        billboardGui.StudsOffset = Vector3.new(0, 3, 0)
-        billboardGui.AlwaysOnTop = true
-        billboardGui.Parent = humanoidRootPart
-        
-        local statusLabel = Instance.new("TextLabel")
-        statusLabel.Name = "StatusText"
-        statusLabel.Size = UDim2.new(1, 0, 1, 0)
-        statusLabel.BackgroundTransparency = 1
-        statusLabel.Text = "Loading..."
-        statusLabel.TextColor3 = ESPColor
-        statusLabel.TextScaled = true
-        statusLabel.Font = Enum.Font.GothamBold
-        statusLabel.TextStrokeTransparency = 0
-        statusLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-        statusLabel.Parent = billboardGui
-        
-        local function updateStatus()
-            if player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Status") then
-                statusLabel.Text = player.Name .. "\n[" .. player.leaderstats.Status.Value .. "]"
-            else
-                statusLabel.Text = player.Name .. "\n[No Status]"
-            end
-        end
-        
-        updateStatus()
-        
-        if player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Status") then
-            player.leaderstats.Status.Changed:Connect(updateStatus)
-        end
-        
-        local highlight = Instance.new("Highlight")
-        highlight.Name = "TypeHubESP_Highlight"
-        highlight.Adornee = character
-        highlight.FillColor = ESPColor
-        highlight.OutlineColor = ESPColor
-        highlight.FillTransparency = 0.7
-        highlight.OutlineTransparency = 0
-        highlight.Parent = character
-        
-        ESPObjects[player] = {
-            billboard = billboardGui,
-            highlight = highlight,
-            statusLabel = statusLabel,
-            updateStatus = updateStatus
-        }
-    end
-    
-    local function removeESP(player)
-        if ESPObjects[player] then
-            if ESPObjects[player].billboard then
-                ESPObjects[player].billboard:Destroy()
-            end
-            if ESPObjects[player].highlight then
-                ESPObjects[player].highlight:Destroy()
-            end
-            ESPObjects[player] = nil
-        end
-    end
-    
-    local function updateESPColor()
-        for player, objects in pairs(ESPObjects) do
-            if objects.highlight then
-                objects.highlight.FillColor = ESPColor
-                objects.highlight.OutlineColor = ESPColor
-            end
-            if objects.statusLabel then
-                objects.statusLabel.TextColor3 = ESPColor
-            end
-        end
-    end
-    
-    local function toggleESP()
-        if ESPEnabled then
-            for _, player in pairs(game.Players:GetPlayers()) do
-                if player ~= game.Players.LocalPlayer then
-                    createESP(player)
-                end
-            end
-            
-            game.Players.PlayerAdded:Connect(function(player)
-                if ESPEnabled then
-                    player.CharacterAdded:Connect(function()
-                        wait(1)
-                        if ESPEnabled then
-                            createESP(player)
-                        end
-                    end)
-                end
-            end)
-            
-            for _, player in pairs(game.Players:GetPlayers()) do
-                if player ~= game.Players.LocalPlayer then
-                    player.CharacterAdded:Connect(function()
-                        wait(1)
-                        if ESPEnabled then
-                            createESP(player)
-                        end
-                    end)
-                end
-            end
-            
-        else
-            for player, _ in pairs(ESPObjects) do
-                removeESP(player)
-            end
-        end
-    end
-    
-    local function setupAutoRespawn()
-        local player = game.Players.LocalPlayer
-        
-        if player.Character then
-            local humanoid = player.Character:FindFirstChild("Humanoid")
-            if humanoid then
-                humanoid.Died:Connect(function()
-                    wait(4)
-                    local args = {{"Respawn"}}
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                end)
-            end
-        end
-        
-        player.CharacterAdded:Connect(function(character)
-            local humanoid = character:WaitForChild("Humanoid")
-            humanoid.Died:Connect(function()
-                wait(4)
-                local args = {{"Respawn"}}
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            end)
-        end)
-    end
-    
-    setupAutoRespawn()
-    
-    local TypeHubTheme = {
-        TextColor = Color3.fromRGB(255, 255, 255),
-        Background = Color3.fromRGB(26, 26, 26),
-        Topbar = Color3.fromRGB(35, 35, 35),
-        Shadow = Color3.fromRGB(15, 15, 15),
-        NotificationBackground = Color3.fromRGB(26, 26, 26),
-        NotificationActionsBackground = Color3.fromRGB(255, 210, 95),
-        TabBackground = Color3.fromRGB(40, 40, 40),
-        TabStroke = Color3.fromRGB(255, 210, 95),
-        TabBackgroundSelected = Color3.fromRGB(255, 210, 95),
-        TabTextColor = Color3.fromRGB(255, 255, 255),
-        SelectedTabTextColor = Color3.fromRGB(26, 26, 26),
-        ElementBackground = Color3.fromRGB(35, 35, 35),
-        ElementBackgroundHover = Color3.fromRGB(45, 45, 45),
-        SecondaryElementBackground = Color3.fromRGB(30, 30, 30),
-        ElementStroke = Color3.fromRGB(255, 210, 95),
-        SecondaryElementStroke = Color3.fromRGB(200, 168, 76),
-        SliderBackground = Color3.fromRGB(255, 210, 95),
-        SliderProgress = Color3.fromRGB(255, 210, 95),
-        SliderStroke = Color3.fromRGB(255, 220, 120),
-        ToggleBackground = Color3.fromRGB(35, 35, 35),
-        ToggleEnabled = Color3.fromRGB(255, 210, 95),
-        ToggleDisabled = Color3.fromRGB(100, 100, 100),
-        ToggleEnabledStroke = Color3.fromRGB(255, 220, 120),
-        ToggleDisabledStroke = Color3.fromRGB(125, 125, 125),
-        ToggleEnabledOuterStroke = Color3.fromRGB(200, 168, 76),
-        ToggleDisabledOuterStroke = Color3.fromRGB(65, 65, 65),
-        DropdownSelected = Color3.fromRGB(45, 45, 45),
-        DropdownUnselected = Color3.fromRGB(35, 35, 35),
-        InputBackground = Color3.fromRGB(35, 35, 35),
-        InputStroke = Color3.fromRGB(255, 210, 95),
-        PlaceholderColor = Color3.fromRGB(178, 178, 178)
-    }
-    
-    local AutoFarmBT = false
-    local AutoFarmFS = false
-    local AutoFarmPP = false
-    local AutoFarmJF = false
-    local AutoFarmMS = false
-    
-    local BTLevel = 1
-    local FSLevel = 1
-    local PPLevel = 1
-    local JFLevel = 1
-    local MSLevel = 1
-    
-    local SpherePunchSpamming = false
-    local SpherePunchNotified = false
-    local SpherePunchCurrentKey = "Q"
-    
-    local BulletPunchSpamming = false
-    local BulletPunchNotified = false
-    local BulletPunchCurrentKey = "E"
-    
-    local WindSliceSpamming = false
-    local WindSliceNotified = false
-    local WindSliceCurrentKey = "R"
-    
-    local function generateOptions(min, max)
-        local options = {}
-        for i = min, max do
-            table.insert(options, tostring(i))
-        end
-        return options
-    end
-    
-    local function getMousePosition()
-        local player = game.Players.LocalPlayer
-        local mouse = player:GetMouse()
-        
-        if mouse.Hit then
-            return mouse.Hit.Position
-        else
-            local character = player.Character
-            if character and character:FindFirstChild("HumanoidRootPart") then
-                local rootPart = character.HumanoidRootPart
-                return rootPart.Position + rootPart.CFrame.LookVector * 10
-            end
-        end
-        
-        return Vector3.new(0, 0, 0)
-    end
-    
-    local Window = Rayfield:CreateWindow({
-        Name = "Type Hub",
-        Icon = "zap",
-        LoadingTitle = "Type Hub Loading...",
-        LoadingSubtitle = "Loading Script...",
-        Theme = TypeHubTheme,
-        
-        ToggleUIKeybind = "K",
-        
-        DisableRayfieldPrompts = false,
-        DisableBuildWarnings = false,
-        
-        ConfigurationSaving = {
-            Enabled = true,
-            FolderName = "TypeHub",
-            FileName = "TypeHub_Config"
-        },
-        
-        Discord = {
-            Enabled = true,
-            Invite = "C9WZFX66",
-            RememberJoins = true
-        },
-        
-        KeySystem = false
-    })
-    
-    Rayfield:Notify({
-        Title = "Type Hub Loaded!",
-        Content = "Welcome! Script is ready to use.",
-        Duration = 5,
-        Image = "zap",
-    })
-    
-    local DashboardTab = Window:CreateTab("Dashboard", "home")
-    
-    local DashboardSection = DashboardTab:CreateSection("Welcome to Type Hub")
-    
-    local WelcomeParagraph = DashboardTab:CreateParagraph({
-        Title = "Welcome to Type Hub!",
-        Content = "Type Hub delivers lightning-fast auto farming solutions. Configure your auto farm settings and join our community on Discord for the latest updates and support."
-    })
-    
-    local StatsSection = DashboardTab:CreateSection("Hub Statistics")
-    
-    local PlayersLabel = DashboardTab:CreateLabel("Players in Server: " .. #game.Players:GetPlayers(), "users")
-    local PingLabel = DashboardTab:CreateLabel("Ping: " .. game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() .. "ms", "wifi")
-    local FPSLabel = DashboardTab:CreateLabel("FPS: " .. math.floor(1/game:GetService("RunService").Heartbeat:Wait()), "monitor")
-    
-    local SystemInfoSection = DashboardTab:CreateSection("System Information")
-    
-    local ExecutorLabel = DashboardTab:CreateLabel("Executor: " .. getExecutorName(), "cpu")
-    local GameLabel = DashboardTab:CreateLabel("Game: " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name, "gamepad-2")
-    
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/newmenu'))()
 
-    
-    local AutoSystemsSection = DashboardTab:CreateSection("Auto Systems Status")
-    
-    local AutoRespawnLabel = DashboardTab:CreateLabel("Auto Respawn (4s): ACTIVE", "refresh-cw")
-    local AntiBlurLabel = DashboardTab:CreateLabel("Anti Blur: ACTIVE", "eye-off")
-    
-    spawn(function()
-        while true do
-            wait(5)
-            PlayersLabel:Set("Players in Server: " .. #game.Players:GetPlayers(), "users")
-            PingLabel:Set("Ping: " .. math.floor(game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()) .. "ms", "wifi")
-            FPSLabel:Set("FPS: " .. math.floor(1/game:GetService("RunService").Heartbeat:Wait()), "monitor")
+local player = game.Players.LocalPlayer
+
+-- Key system removed, directly create Rayfield menu
+local Window = Rayfield:CreateWindow({
+    Name = "SPTS:MODDED Script by CRB👿",
+    Icon = "atom", -- Icon in Topbar
+    LoadingTitle = "CRB Script",
+    LoadingSubtitle = "by CRB👿",
+    Theme = "DarkBlue", -- Theme
+    DisableRayfieldPrompts = false,
+    DisableBuildWarnings = false,
+
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = nil,
+        FileName = "Big Hub"
+    },
+
+    Discord = {
+        Enabled = true,
+        Invite = "gjeuUAgkQz",
+        RememberJoins = false
+    },
+
+    KeySystem = false, -- Key system disabled
+})
+
+local MainTab = Window:CreateTab("👑Main", 0) -- Title, Image
+local OtherTab = Window:CreateTab("👺Other", 0) -- Title, Image
+local MiscTab = Window:CreateTab("💎Misc", 0) -- Title, Image
+local RageTab = Window:CreateTab("👽Rage", 0) -- Title, Image
+local MainSection = MainTab:CreateSection("Main")
+local OtherSection = OtherTab:CreateSection("Other")
+local MiscSection = MiscTab:CreateSection("Misc")
+local RageSection = RageTab:CreateSection("Rage")
+
+local Label = MainTab:CreateLabel("Last Training Areas (Faster)", 0, Color3.fromRGB(255, 255, 255), false) -- Title, Icon, Color, IgnoreTheme
+
+local Button = MainTab:CreateButton({
+    Name = "Fist(10X-15X)",
+    Callback = function()
+        loadstring(game:HttpGet("https://github.com/MysteryCRB/testing/raw/refs/heads/main/FSBoost.lua", true))()
+    end,
+})
+local Button = MainTab:CreateButton({
+    Name = "Body(8X-12X)",
+    Callback = function()
+        loadstring(game:HttpGet("https://github.com/MysteryCRB/testing/raw/refs/heads/main/btb.lua", true))()
+    end,
+})
+local Button = MainTab:CreateButton({
+    Name = "Psychic(10X-15X)",
+    Callback = function()
+        loadstring(game:HttpGet("https://github.com/MysteryCRB/testing/raw/refs/heads/main/huek.lua", true))()
+    end,
+})
+local Button = MainTab:CreateButton({
+    Name = "MS/JF(5X-10X)",
+    Callback = function()
+        loadstring(game:HttpGet("https://github.com/MysteryCRB/testing/raw/refs/heads/main/ms.lua", true))()
+    end,
+})
+local Button = MiscTab:CreateButton({
+    Name = "ESP",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/esp", true))()
+    end,
+})
+local Label = RageTab:CreateLabel("Soon!!", 0, Color3.fromRGB(255, 255, 255), false) -- Title, Icon, Color, IgnoreTheme
+local Button = RageTab:CreateButton({
+    Name = "Rage(Soul-Attack)",
+    Callback = function()
+    end,
+})
+local Button = RageTab:CreateButton({
+    Name = "Rage(PS-VERYLAGGY)",
+    Callback = function()
+    end,
+})
+local Button = RageTab:CreateButton({
+    Name = "Rage(Grim-Reaper)",
+    Callback = function()
+    end,
+})
+local Button = MiscTab:CreateButton({
+    Name = "FPS BOOSTER",
+    Callback = function()
+        --Made by Massthix
+        _G.Settings = {
+            Players = {
+                ["Ignore Me"] = true, -- Ignore your Character
+                ["Ignore Others"] = true -- Ignore other Characters
+            },
+            Meshes = {
+                Destroy = false, -- Destroy Meshes
+                LowDetail = true -- Low detail meshes (NOT SURE IT DOES ANYTHING)
+            },
+            Images = {
+                Invisible = true, -- Invisible Images
+                LowDetail = false, -- Low detail images (NOT SURE IT DOES ANYTHING)
+                Destroy = false, -- Destroy Images
+            },
+            ["No Particles"] = true, -- Disables all ParticleEmitter, Trail, Smoke, Fire and Sparkles
+            ["No Camera Effects"] = true, -- Disables all PostEffect's (Camera/Lighting Effects)
+            ["No Explosions"] = true, -- Makes Explosion's invisible
+            ["No Clothes"] = true, -- Removes Clothing from the game
+            ["Low Water Graphics"] = true, -- Removes Water Quality
+            ["No Shadows"] = true, -- Remove Shadows
+            ["Low Rendering"] = true, -- Lower Rendering
+            ["Low Quality Parts"] = true -- Lower quality parts
+        }
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/fps"))()
+    end,
+})
+
+local deathreturnactive = true
+local player = game:GetService("Players").LocalPlayer
+local lastlocation = nil
+local deathLoop = nil -- AutoDeath loop control variable
+
+-- Function to update last location
+local function updateLastLocation()
+    while true do
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            lastlocation = player.Character.HumanoidRootPart.Position
         end
-    end)
-    
-    local QuickActionsSection = DashboardTab:CreateSection("Quick Actions")
-    
-    local RejoinButton = DashboardTab:CreateButton({
-        Name = "Rejoin Server",
-        Callback = function()
-            game:GetService("TeleportService"):Teleport(game.PlaceId, game.Players.LocalPlayer)
-        end,
-    })
-    
-    local CopyJobIdButton = DashboardTab:CreateButton({
-        Name = "Copy Job ID",
-        Callback = function()
-            setclipboard(game.JobId)
-            Rayfield:Notify({
-                Title = "Success!",
-                Content = "Job ID copied to clipboard",
-                Duration = 3,
-                Image = "check",
-            })
-        end,
-    })
-    
-    local ManualRespawnButton = DashboardTab:CreateButton({
-        Name = "Manual Respawn",
-        Callback = function()
-            local args = {{"Respawn"}}
-            game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            Rayfield:Notify({
-                Title = "Respawn Triggered!",
-                Content = "Manual respawn command sent",
-                Duration = 3,
-                Image = "refresh-cw",
-            })
-        end,
-    })
-    
-    local AutoFarmTab = Window:CreateTab("Auto Farm", "zap")
-    
-    local BTSection = AutoFarmTab:CreateSection("BT Auto Farm")
-    
-    local BTDropdown = AutoFarmTab:CreateDropdown({
-        Name = "BT Level",
-        Options = generateOptions(1, 9),
-        CurrentOption = {"1"},
-        MultipleOptions = false,
-        Flag = "BTLevel",
-        Callback = function(Options)
-            BTLevel = tonumber(Options[1])
-        end,
-    })
-    
-    local BTToggle = AutoFarmTab:CreateToggle({
-        Name = "Auto Farm BT",
-        CurrentValue = false,
-        Flag = "AutoFarmBT",
-        Callback = function(Value)
-            AutoFarmBT = Value
-            if Value then
-                Rayfield:Notify({
-                    Title = "BT Auto Farm Started!",
-                    Content = "Auto farming BT level " .. BTLevel,
-                    Duration = 3,
-                    Image = "zap",
-                })
-            else
-                Rayfield:Notify({
-                    Title = "BT Auto Farm Stopped!",
-                    Content = "Auto farming has been disabled",
-                    Duration = 3,
-                    Image = "square",
-                })
-            end
-        end,
-    })
-    
-    local FSSection = AutoFarmTab:CreateSection("FS Auto Farm")
-    
-    local FSDropdown = AutoFarmTab:CreateDropdown({
-        Name = "FS Level",
-        Options = generateOptions(1, 6),
-        CurrentOption = {"1"},
-        MultipleOptions = false,
-        Flag = "FSLevel",
-        Callback = function(Options)
-            FSLevel = tonumber(Options[1])
-        end,
-    })
-    
-    local FSToggle = AutoFarmTab:CreateToggle({
-        Name = "Auto Farm FS",
-        CurrentValue = false,
-        Flag = "AutoFarmFS",
-        Callback = function(Value)
-            AutoFarmFS = Value
-            if Value then
-                Rayfield:Notify({
-                    Title = "FS Auto Farm Started!",
-                    Content = "Auto farming FS level " .. FSLevel,
-                    Duration = 3,
-                    Image = "zap",
-                })
-            else
-                Rayfield:Notify({
-                    Title = "FS Auto Farm Stopped!",
-                    Content = "Auto farming has been disabled",
-                    Duration = 3,
-                    Image = "square",
-                })
-            end
-        end,
-    })
-    
-    local PPSection = AutoFarmTab:CreateSection("PP Auto Farm")
-    
-    local PPDropdown = AutoFarmTab:CreateDropdown({
-        Name = "PP Level",
-        Options = generateOptions(1, 5),
-        CurrentOption = {"1"},
-        MultipleOptions = false,
-        Flag = "PPLevel",
-        Callback = function(Options)
-            PPLevel = tonumber(Options[1])
-        end,
-    })
-    
-    local PPToggle = AutoFarmTab:CreateToggle({
-        Name = "Auto Farm PP",
-        CurrentValue = false,
-        Flag = "AutoFarmPP",
-        Callback = function(Value)
-            AutoFarmPP = Value
-            if Value then
-                Rayfield:Notify({
-                    Title = "PP Auto Farm Started!",
-                    Content = "Auto farming PP level " .. PPLevel,
-                    Duration = 3,
-                    Image = "zap",
-                })
-            else
-                Rayfield:Notify({
-                    Title = "PP Auto Farm Stopped!",
-                    Content = "Auto farming has been disabled",
-                    Duration = 3,
-                    Image = "square",
-                })
-            end
-        end,
-    })
-    
-    local JFSection = AutoFarmTab:CreateSection("JF Auto Farm")
-    
-    local JFDropdown = AutoFarmTab:CreateDropdown({
-        Name = "JF Level",
-        Options = generateOptions(1, 5),
-        CurrentOption = {"1"},
-        MultipleOptions = false,
-        Flag = "JFLevel",
-        Callback = function(Options)
-            JFLevel = tonumber(Options[1])
-        end,
-    })
-    
-    local JFToggle = AutoFarmTab:CreateToggle({
-        Name = "Auto Farm JF",
-        CurrentValue = false,
-        Flag = "AutoFarmJF",
-        Callback = function(Value)
-            AutoFarmJF = Value
-            if Value then
-                Rayfield:Notify({
-                    Title = "JF Auto Farm Started!",
-                    Content = "Auto farming JF level " .. JFLevel,
-                    Duration = 3,
-                    Image = "zap",
-                })
-            else
-                Rayfield:Notify({
-                    Title = "JF Auto Farm Stopped!",
-                    Content = "Auto farming has been disabled",
-                    Duration = 3,
-                    Image = "square",
-                })
-            end
-        end,
-    })
-    
-    local MSSection = AutoFarmTab:CreateSection("MS Auto Farm")
-    
-    local MSDropdown = AutoFarmTab:CreateDropdown({
-        Name = "MS Level",
-        Options = generateOptions(1, 5),
-        CurrentOption = {"1"},
-        MultipleOptions = false,
-        Flag = "MSLevel",
-        Callback = function(Options)
-            MSLevel = tonumber(Options[1])
-        end,
-    })
-    
-    local MSToggle = AutoFarmTab:CreateToggle({
-        Name = "Auto Farm MS",
-        CurrentValue = false,
-        Flag = "AutoFarmMS",
-        Callback = function(Value)
-            AutoFarmMS = Value
-            if Value then
-                Rayfield:Notify({
-                    Title = "MS Auto Farm Started!",
-                    Content = "Auto farming MS level " .. MSLevel,
-                    Duration = 3,
-                    Image = "zap",
-                })
-            else
-                Rayfield:Notify({
-                    Title = "MS Auto Farm Stopped!",
-                    Content = "Auto farming has been disabled",
-                    Duration = 3,
-                    Image = "square",
-                })
-            end
-        end,
-    })
-    
-    local OPTab = Window:CreateTab("OP", "skull")
-    
-    local OPIntroSection = OPTab:CreateSection("OverPowered Features")
-    
-    local OPParagraph = OPTab:CreateParagraph({
-        Title = "Ultimate Combat Arsenal",
-        Content = "Unleash devastating attacks and dominate the battlefield with our advanced combat system. These features are designed for experienced players who want maximum power and control."
-    })
-    
-    local CombatSkillsSection = OPTab:CreateSection("Combat Skills")
-    
-    local SkillInfoLabel = OPTab:CreateLabel("Sphere Punch - Devastating Area Attack", "target")
-    
-    local SpherePunchKeybind = OPTab:CreateKeybind({
-        Name = "Sphere Punch Spam",
-        CurrentKeybind = "Q",
-        HoldToInteract = true,
-        Flag = "SpherePunchKeybind",
-        Callback = function(Keybind)
-            if type(Keybind) == "string" then
-                SpherePunchCurrentKey = Keybind
-            end
-            
-            SpherePunchSpamming = Keybind
-            
-            if Keybind and not SpherePunchNotified then
-                SpherePunchNotified = true
-                Rayfield:Notify({
-                    Title = "Sphere Punch Activated!",
-                    Content = "Devastating attacks at mouse position while holding " .. SpherePunchCurrentKey,
-                    Duration = 3,
-                    Image = "zap",
-                })
-            elseif not Keybind and SpherePunchNotified then
-                SpherePunchNotified = false
-                Rayfield:Notify({
-                    Title = "Sphere Punch Deactivated!",
-                    Content = "Released " .. SpherePunchCurrentKey .. " key - combat mode disabled",
-                    Duration = 3,
-                    Image = "shield-off",
-                })
-            end
-        end,
-    })
-    
-    local BulletPunchDivider = OPTab:CreateDivider()
-    
-    local BulletSkillInfoLabel = OPTab:CreateLabel("Bullet Punch - Rapid Fire Combo", "crosshair")
-    
-    local BulletPunchKeybind = OPTab:CreateKeybind({
-        Name = "Bullet Punch Spam",
-        CurrentKeybind = "E",
-        HoldToInteract = true,
-        Flag = "BulletPunchKeybind",
-        Callback = function(Keybind)
-            if type(Keybind) == "string" then
-                BulletPunchCurrentKey = Keybind
-            elseif type(Keybind) == "boolean" and Keybind then
-                BulletPunchCurrentKey = "E"
-            end
-            
-            BulletPunchSpamming = Keybind
-            
-            if Keybind and not BulletPunchNotified then
-                BulletPunchNotified = true
-                Rayfield:Notify({
-                    Title = "Bullet Punch Activated!",
-                    Content = "Rapid fire combo attacks while holding " .. BulletPunchCurrentKey,
-                    Duration = 3,
-                    Image = "zap",
-                })
-            elseif not Keybind and BulletPunchNotified then
-                BulletPunchNotified = false
-                Rayfield:Notify({
-                    Title = "Bullet Punch Deactivated!",
-                    Content = "Released " .. BulletPunchCurrentKey .. " key - rapid fire stopped",
-                    Duration = 3,
-                    Image = "shield-off",
-                })
-            end
-        end,
-    })
-    
-    local WindSliceDivider = OPTab:CreateDivider()
-    
-    local WindSkillInfoLabel = OPTab:CreateLabel("Wind Slice - Cutting Wind Attack", "wind")
-    
-    local WindSliceKeybind = OPTab:CreateKeybind({
-        Name = "Wind Slice Spam",
-        CurrentKeybind = "R",
-        HoldToInteract = true,
-        Flag = "WindSliceKeybind",
-        Callback = function(Keybind)
-            if type(Keybind) == "string" then
-                WindSliceCurrentKey = Keybind
-            elseif type(Keybind) == "boolean" and Keybind then
-                WindSliceCurrentKey = "R"
-            end
-            
-            WindSliceSpamming = Keybind
-            
-            if Keybind and not WindSliceNotified then
-                WindSliceNotified = true
-                Rayfield:Notify({
-                    Title = "Wind Slice Activated!",
-                    Content = "Cutting wind attacks at mouse position while holding " .. WindSliceCurrentKey,
-                    Duration = 3,
-                    Image = "zap",
-                })
-            elseif not Keybind and WindSliceNotified then
-                WindSliceNotified = false
-                Rayfield:Notify({
-                    Title = "Wind Slice Deactivated!",
-                    Content = "Released " .. WindSliceCurrentKey .. " key - wind attacks stopped",
-                    Duration = 3,
-                    Image = "shield-off",
-                })
-            end
-        end,
-    })
-    
-    local CombatStatusSection = OPTab:CreateSection("Combat Status")
-    
-    local CombatModeLabel = OPTab:CreateLabel("Combat Mode: Inactive", "shield")
-    local TargetingLabel = OPTab:CreateLabel("Targeting: Mouse Position", "crosshair")
-    local AttackRateLabel = OPTab:CreateLabel("Attack Rate: Variable by skill", "clock")
-    
-    spawn(function()
-        while true do
-            wait(1)
-            if SpherePunchSpamming or BulletPunchSpamming or WindSliceSpamming then
-                CombatModeLabel:Set("Combat Mode: ACTIVE", "shield-check")
-            else
-                CombatModeLabel:Set("Combat Mode: Inactive", "shield")
-            end
-        end
-    end)
-    
-    local AdvancedControlsSection = OPTab:CreateSection("Advanced Controls")
-    
-    local ResetCombatButton = OPTab:CreateButton({
-        Name = "Reset Combat System",
-        Callback = function()
-            SpherePunchSpamming = false
-            SpherePunchNotified = false
-            BulletPunchSpamming = false
-            BulletPunchNotified = false
-            WindSliceSpamming = false
-            WindSliceNotified = false
-            Rayfield:Notify({
-                Title = "Combat System Reset!",
-                Content = "All combat functions have been reset",
-                Duration = 3,
-                Image = "refresh-cw",
-            })
-        end,
-    })
-    
-    local TestAttackButton = OPTab:CreateButton({
-        Name = "Test Single Attack",
-        Callback = function()
-            local targetPosition = getMousePosition()
-            local args = {
-                {
-                    "Skill_SpherePunch",
-                    targetPosition
-                }
-            }
-            game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            
-            Rayfield:Notify({
-                Title = "Test Attack Fired!",
-                Content = "Single Sphere Punch executed",
-                Duration = 2,
-                Image = "target",
-            })
-        end,
-    })
-    
-    local PowerLevelSection = OPTab:CreateSection("Power Level")
-    
-    local PowerMeterLabel = OPTab:CreateLabel("Power Level: MAXIMUM", "trending-up")
-    local DamageTypeLabel = OPTab:CreateLabel("Damage Type: Area of Effect", "bomb")
-    local RangeLabel = OPTab:CreateLabel("Range: Unlimited", "maximize")
-    
-    local WarningSection = OPTab:CreateSection("Warning")
-    
-    local WarningParagraph = OPTab:CreateParagraph({
-        Title = "Use Responsibly",
-        Content = "These features are extremely powerful and should be used responsibly. Always follow server rules and respect other players. Misuse may result in consequences."
-    })
-    
-    local VisualsTab = Window:CreateTab("Visuals", "eye")
-    
-    local AntiBlurEnabled = true
-    
-    local function removeAllBlurEffects()
-        for _, effect in pairs(game.Lighting:GetChildren()) do
-            if effect:IsA("BlurEffect") then
-                effect:Destroy()
-            end
-        end
-        
-        local camera = workspace.CurrentCamera
-        if camera then
-            for _, effect in pairs(camera:GetChildren()) do
-                if effect:IsA("BlurEffect") then
-                    effect:Destroy()
-                end
-            end
-        end
-        
-        local playerGui = game.Players.LocalPlayer:FindFirstChild("PlayerGui")
-        if playerGui then
-            for _, gui in pairs(playerGui:GetDescendants()) do
-                if gui:IsA("BlurEffect") then
-                    gui:Destroy()
-                end
-            end
-        end
-        
-        local coreGui = game:GetService("CoreGui")
-        for _, gui in pairs(coreGui:GetDescendants()) do
-            if gui:IsA("BlurEffect") then
-                gui:Destroy()
-            end
-        end
+        wait(5)
     end
-    
-    local function setupAntiBlur()
-        removeAllBlurEffects()
-        
-        game.Lighting.ChildAdded:Connect(function(child)
-            if AntiBlurEnabled and child:IsA("BlurEffect") then
-                wait(0.1)
-                child:Destroy()
+end
+task.spawn(updateLastLocation) -- Run in infinite loop
+
+-- Toggle AutoDeath function
+local function toggleAutoDeath(enabled)
+    if enabled then
+        if deathLoop then return end -- Don't start if already running
+        print("AutoDeath started.") -- Control message
+        deathLoop = task.spawn(function()
+            while true do
+                -- Wait for character to spawn
+                repeat wait() until player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+
+                local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+
+                -- Wait until Humanoid is fully loaded
+                repeat wait() until humanoid and humanoid.Health > 0
+
+                -- Make sure player dies
+                while humanoid.Health > 0 do
+                    humanoid:TakeDamage(humanoid.MaxHealth) -- Kill by dealing damage
+                    humanoid.Health = 0 -- Set to zero to be sure
+                    wait(0.1)
+                end
+
+                wait(9) -- Loop duration
             end
         end)
-        
-        local function monitorCamera(camera)
-            if camera then
-                camera.ChildAdded:Connect(function(child)
-                    if AntiBlurEnabled and child:IsA("BlurEffect") then
-                        wait(0.1)
-                        child:Destroy()
+    else
+        if deathLoop then
+            task.cancel(deathLoop)
+            deathLoop = nil
+            print("AutoDeath stopped.") -- Control message
+        end
+    end
+end
+
+-- Function to respawn character after death
+local function respawnLoop()
+    while true do
+        -- Wait for character to spawn
+        repeat wait() until player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+
+        if humanoid and humanoid.Health <= 0 then
+            wait(1)
+
+            -- Respawn process
+            local remoteEvent = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteEvent")
+            if remoteEvent then
+                remoteEvent:FireServer({[1] = "Respawn"})
+            end
+
+            -- Reset UI settings
+            wait(1)
+            game.Lighting.Blur.Enabled = false
+            game.Players.LocalPlayer.PlayerGui.IntroGui.Enabled = false
+            game.Players.LocalPlayer.PlayerGui.ScreenGui.Enabled = true
+
+            -- Wait until new character is loaded
+            repeat wait(0.1) until player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+
+            -- Teleport to last location
+            if deathreturnactive and lastlocation then
+                player.Character.HumanoidRootPart.CFrame = CFrame.new(lastlocation)
+            end
+        end
+
+        wait(0.1)
+    end
+end
+task.spawn(respawnLoop) -- Run in infinite loop
+
+-- 📌 **TOGGLE BUTONU**
+local Toggle = MiscTab:CreateToggle({
+    Name = "StackX 💀",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        toggleAutoDeath(Value) -- AutoDeath aç/kapat
+    end
+}) -- 🔴 **HATA YOK! `})` ile düzgün kapanıyor.**
+
+local ScreenGui -- Burada global bir değişken olarak tanımladık
+
+local Toggle = MiscTab:CreateToggle({
+    Name = "New NoLag",
+    CurrentValue = false,
+    Flag = "Toggle1",
+    Callback = function(Value)
+        if Value then
+            -- Statları göstermek için gerekli servisleri al
+            local Players = game:GetService("Players")
+            local LocalPlayer = Players.LocalPlayer
+            local PlayerStats = LocalPlayer.PrivateStats
+
+            -- Eğer Screen Literalist ile oluşturuldu: 30 Ekim 2024 Çarşamba, 00:05:35 WIB
+
+            -- Eğer ScreenGui oluşturulmadıysa, oluşturuyoruz
+            if not ScreenGui then
+                ScreenGui = Instance.new("ScreenGui")
+                ScreenGui.Parent = game.CoreGui
+
+                -- Statları göstermek için bir Frame oluştur
+                local StatsFrame = Instance.new("Frame")
+                StatsFrame.Size = UDim2.new(0, 600, 0, 350)
+                StatsFrame.Position = UDim2.new(0, 10, 0.5, -75) -- Sol orta
+                StatsFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+                StatsFrame.BackgroundTransparency = 1
+                StatsFrame.Parent = ScreenGui
+
+                -- Statları göstermek için TextLabel'lar oluştur
+                local FistLabel = Instance.new("TextLabel")
+                FistLabel.Size = UDim2.new(1, 0, 0, 30)
+                FistLabel.Position = UDim2.new(0, 100, 0, 0)
+                FistLabel.BackgroundTransparency = 1
+                FistLabel.TextColor3 = Color3.new(0, 0, 139)
+                FistLabel.TextSize = 20
+                FistLabel.Font = Enum.Font.GothamBold  -- Font değişikliği
+                FistLabel.Parent = StatsFrame
+
+                local BodyLabel = Instance.new("TextLabel")
+                BodyLabel.Size = UDim2.new(1, 0, 0, 30)
+                BodyLabel.Position = UDim2.new(0, 100, 0, 30)
+                BodyLabel.BackgroundTransparency = 1
+                BodyLabel.TextColor3 = Color3.new(0, 0, 139)
+                BodyLabel.TextSize = 20
+                BodyLabel.Font = Enum.Font.GothamBold  -- Font değişikliği
+                BodyLabel.Parent = StatsFrame
+
+                local PsychicLabel = Instance.new("TextLabel")
+                PsychicLabel.Size = UDim2.new(1, 0, 0, 30)
+                PsychicLabel.Position = UDim2.new(0, 100, 0, 60)
+                PsychicLabel.BackgroundTransparency = 1
+                PsychicLabel.TextColor3 = Color3.new(0, 0, 139)
+                PsychicLabel.TextSize = 20
+                PsychicLabel.Font = Enum.Font.GothamBold  -- Font değişikliği
+                PsychicLabel.Parent = StatsFrame
+
+                local SpeedLabel = Instance.new("TextLabel")
+                SpeedLabel.Size = UDim2.new(1, 0, 0, 30)
+                SpeedLabel.Position = UDim2.new(0, 100, 0, 90)
+                SpeedLabel.BackgroundTransparency = 1
+                SpeedLabel.TextColor3 = Color3.new(0, 0, 139)
+                SpeedLabel.TextSize = 20
+                SpeedLabel.Font = Enum.Font.GothamBold  -- Font değişikliği
+                SpeedLabel.Parent = StatsFrame
+
+                local JumpLabel = Instance.new("TextLabel")
+                JumpLabel.Size = UDim2.new(1, 0, 0, 30)
+                JumpLabel.Position = UDim2.new(0, 100, 0, 120)
+                JumpLabel.BackgroundTransparency = 1
+                JumpLabel.TextColor3 = Color3.new(0, 0, 139)
+                JumpLabel.TextSize = 20
+                JumpLabel.Font = Enum.Font.GothamBold  -- Font değişikliği
+                JumpLabel.Parent = StatsFrame
+
+                -- Sayıları kısaltmak için fonksiyon
+                function converttoletter(num)
+                    if num >= 1e21 then
+                        return string.format("%.2f Sx", num / 1e21)
+                    elseif num >= 1e18 then
+                        return string.format("%.2f Qi", num / 1e18)
+                    elseif num >= 1e15 then
+                        return string.format("%.2f Qa", num / 1e15)
+                    elseif num >= 1e12 then
+                        return string.format("%.2f T", num / 1e12)
+                    elseif num >= 1e9 then
+                        return string.format("%.2f B", num / 1e9)
+                    elseif num >= 1e6 then
+                        return string.format("%.2f M", num / 1e6)
+                    elseif num >= 1e3 then
+                        return string.format("%.2f K", num / 1e3)
+                    else
+                        return tostring(num)
                     end
+                end
+
+                -- Statları hızlı güncelleyen fonksiyon
+                local function updateStats()
+                    local FistValue = PlayerStats.FistStrength.Value
+                    local BodyValue = PlayerStats.BodyToughness.Value
+                    local PsychicValue = PlayerStats.PsychicPower.Value
+                    local SpeedValue = PlayerStats.MovementSpeed.Value
+                    local JumpValue = PlayerStats.JumpForce.Value
+
+                    -- Statları hemen güncellemeye başla
+                    FistLabel.Text = "Fist: " .. converttoletter(FistValue)
+                    BodyLabel.Text = "Body: " .. converttoletter(BodyValue)
+                    PsychicLabel.Text = "Psychic: " .. converttoletter(PsychicValue)
+                    SpeedLabel.Text = "Speed: " .. converttoletter(SpeedValue)
+                    JumpLabel.Text = "Jump: " .. converttoletter(JumpValue)
+                end
+
+                -- Statları hızlı bir şekilde güncellemeye başla
+                game:GetService("RunService").Heartbeat:Connect(function()
+                    updateStats()
                 end)
             end
-        end
-        
-        monitorCamera(workspace.CurrentCamera)
-        
-        workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
-            local newCamera = workspace.CurrentCamera
-            monitorCamera(newCamera)
-            
-            if newCamera and AntiBlurEnabled then
-                for _, effect in pairs(newCamera:GetChildren()) do
-                    if effect:IsA("BlurEffect") then
-                        effect:Destroy()
-                    end
-                end
-            end
-        end)
-        
-        local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-        playerGui.DescendantAdded:Connect(function(descendant)
-            if AntiBlurEnabled and descendant:IsA("BlurEffect") then
-                wait(0.1)
-                descendant:Destroy()
-            end
-        end)
-        
-        spawn(function()
-            while true do
-                wait(2)
-                if AntiBlurEnabled then
-                    removeAllBlurEffects()
-                end
-            end
-        end)
-    end
-    
-    setupAntiBlur()
-    
-    local AntiBlurSection = VisualsTab:CreateSection("Anti-Blur System")
-    
-    local AntiBlurParagraph = VisualsTab:CreateParagraph({
-        Title = "Automatic Blur Removal",
-        Content = "Automatically removes all blur effects from the game including camera blur, lighting blur, and UI blur effects. Monitors continuously for new blur effects and removes them instantly."
-    })
-    
-    local AntiBlurToggle = VisualsTab:CreateToggle({
-        Name = "Enable Anti-Blur",
-        CurrentValue = true,
-        Flag = "AntiBlurEnabled",
-        Callback = function(Value)
-            AntiBlurEnabled = Value
-            if Value then
-                removeAllBlurEffects()
-                Rayfield:Notify({
-                    Title = "Anti-Blur Enabled!",
-                    Content = "All blur effects will be automatically removed",
-                    Duration = 3,
-                    Image = "eye-off",
-                })
-            else
-                Rayfield:Notify({
-                    Title = "Anti-Blur Disabled!",
-                    Content = "Blur effects will no longer be automatically removed",
-                    Duration = 3,
-                    Image = "eye",
-                })
-            end
-        end,
-    })
-    
-    local ClearBlurButton = VisualsTab:CreateButton({
-        Name = "Clear All Blur Now",
-        Callback = function()
-            removeAllBlurEffects()
-            Rayfield:Notify({
-                Title = "Blur Cleared!",
-                Content = "All existing blur effects have been removed",
-                Duration = 3,
-                Image = "eye-off",
-            })
-        end,
-    })
-    
-    local ESPSection = VisualsTab:CreateSection("Player ESP")
-    
-    local ESPParagraph = VisualsTab:CreateParagraph({
-        Title = "Player ESP System",
-        Content = "Advanced ESP system that highlights players and displays their status from leaderstats. Customize colors and toggle visibility as needed."
-    })
-    
-    local ESPToggle = VisualsTab:CreateToggle({
-        Name = "Enable Player ESP",
-        CurrentValue = false,
-        Flag = "ESPEnabled",
-        Callback = function(Value)
-            ESPEnabled = Value
-            toggleESP()
-            if Value then
-                Rayfield:Notify({
-                    Title = "ESP Enabled!",
-                    Content = "Player ESP with status display activated",
-                    Duration = 3,
-                    Image = "eye",
-                })
-            else
-                Rayfield:Notify({
-                    Title = "ESP Disabled!",
-                    Content = "Player ESP has been turned off",
-                    Duration = 3,
-                    Image = "eye-off",
-                })
-            end
-        end,
-    })
-    
-    local ESPColorPicker = VisualsTab:CreateColorPicker({
-        Name = "ESP Color",
-        Color = Color3.fromRGB(255, 210, 95),
-        Flag = "ESPColor",
-        Callback = function(Value)
-            ESPColor = Value
-            updateESPColor()
-        end
-    })
-    
-    local ESPControlsSection = VisualsTab:CreateSection("ESP Controls")
-    
-    local RefreshESPButton = VisualsTab:CreateButton({
-        Name = "Refresh ESP",
-        Callback = function()
-            if ESPEnabled then
-                for player, _ in pairs(ESPObjects) do
-                    removeESP(player)
-                end
-                
-                for _, player in pairs(game.Players:GetPlayers()) do
-                    if player ~= game.Players.LocalPlayer then
-                        createESP(player)
-                    end
-                end
-                
-                Rayfield:Notify({
-                    Title = "ESP Refreshed!",
-                    Content = "All ESP elements have been updated",
-                    Duration = 3,
-                    Image = "refresh-cw",
-                })
-            else
-                Rayfield:Notify({
-                    Title = "ESP Not Active!",
-                    Content = "Please enable ESP first",
-                    Duration = 3,
-                    Image = "alert-circle",
-                })
-            end
-        end,
-    })
-    
-    local ClearESPButton = VisualsTab:CreateButton({
-        Name = "Clear All ESP",
-        Callback = function()
-            for player, _ in pairs(ESPObjects) do
-                removeESP(player)
-            end
-            ESPEnabled = false
-            ESPToggle:Set(false)
-            
-            Rayfield:Notify({
-                Title = "ESP Cleared!",
-                Content = "All ESP elements have been removed",
-                Duration = 3,
-                Image = "trash-2",
-            })
-        end,
-    })
-    
-    local ESPInfoSection = VisualsTab:CreateSection("ESP Information")
-    
-    local ESPStatusLabel = VisualsTab:CreateLabel("ESP Status: Disabled", "info")
-    local ESPPlayersLabel = VisualsTab:CreateLabel("Players with ESP: 0", "users")
-    
-    spawn(function()
-        while true do
-            wait(2)
-            if ESPEnabled then
-                ESPStatusLabel:Set("ESP Status: Enabled", "eye")
-                local count = 0
-                for _ in pairs(ESPObjects) do
-                    count = count + 1
-                end
-                ESPPlayersLabel:Set("Players with ESP: " .. count, "users")
-            else
-                ESPStatusLabel:Set("ESP Status: Disabled", "eye-off")
-                ESPPlayersLabel:Set("Players with ESP: 0", "users")
-            end
-        end
-    end)
-    
-    local OthersTab = Window:CreateTab("Others", "more-horizontal")
-    
-    local PlayerInfoSection = OthersTab:CreateSection("Player Information")
-    
-    local PlayerInfoParagraph = OthersTab:CreateParagraph({
-        Title = "Player Statistics",
-        Content = "View your current player statistics including aura status, tokens, and various skill levels. All values are automatically formatted for readability."
-    })
-    
-    local FistAuraSection = OthersTab:CreateSection("Fist Aura Status")
-    
-    local FistAuraLabel = OthersTab:CreateLabel("Fist Aura: Loading...", "star")
-    
-    local TokensSection = OthersTab:CreateSection("Currency")
-    
-    local TokensLabel = OthersTab:CreateLabel("Tokens: Loading...", "coins")
-    
-    local StatsSection = OthersTab:CreateSection("Player Statistics")
-    
-    local FistStrengthLabel = OthersTab:CreateLabel("Fist Strength: Loading...", "hand")
-    local BodyToughnessLabel = OthersTab:CreateLabel("Body Toughness: Loading...", "shield")
-    local PsychicPowerLabel = OthersTab:CreateLabel("Psychic Power: Loading...", "brain")
-    local JumpForceLabel = OthersTab:CreateLabel("Jump Force: Loading...", "arrow-up")
-    local MovementSpeedLabel = OthersTab:CreateLabel("Movement Speed: Loading...", "zap")
-    
-    local StatsControlsSection = OthersTab:CreateSection("Statistics Controls")
-    
-    local RefreshStatsButton = OthersTab:CreateButton({
-        Name = "Refresh All Stats",
-        Callback = function()
-            Rayfield:Notify({
-                Title = "Stats Refreshed!",
-                Content = "All player statistics have been updated",
-                Duration = 3,
-                Image = "refresh-cw",
-            })
-        end,
-    })
-    
-    local CopyStatsButton = OthersTab:CreateButton({
-        Name = "Copy Stats to Clipboard",
-        Callback = function()
-            local player = game.Players.LocalPlayer
-            if player:FindFirstChild("PrivateStats") then
-                local stats = player.PrivateStats
-                local statsText = "Type Hub - Player Stats:\n"
-                
-                if stats:FindFirstChild("FSAuraUnlocked") then
-                    statsText = statsText .. "Fist Aura: " .. tostring(getSafeValue(stats.FSAuraUnlocked, "Unknown")) .. "\n"
-                end
-                
-                if stats:FindFirstChild("Tokens") then
-                    statsText = statsText .. "Tokens: " .. formatNumber(getSafeValue(stats.Tokens, 0)) .. "\n"
-                end
-                
-                if stats:FindFirstChild("FistStrength") then
-                    statsText = statsText .. "Fist Strength: " .. formatNumber(getSafeValue(stats.FistStrength, 0)) .. "\n"
-                end
-                if stats:FindFirstChild("BodyToughness") then
-                    statsText = statsText .. "Body Toughness: " .. formatNumber(getSafeValue(stats.BodyToughness, 0)) .. "\n"
-                end
-                if stats:FindFirstChild("PsychicPower") then
-                    statsText = statsText .. "Psychic Power: " .. formatNumber(getSafeValue(stats.PsychicPower, 0)) .. "\n"
-                end
-                if stats:FindFirstChild("JumpForce") then
-                    statsText = statsText .. "Jump Force: " .. formatNumber(getSafeValue(stats.JumpForce, 0)) .. "\n"
-                end
-                if stats:FindFirstChild("MovementSpeed") then
-                    statsText = statsText .. "Movement Speed: " .. formatNumber(getSafeValue(stats.MovementSpeed, 0)) .. "\n"
-                end
-                
-                setclipboard(statsText)
-                Rayfield:Notify({
-                    Title = "Stats Copied!",
-                    Content = "Player statistics copied to clipboard",
-                    Duration = 3,
-                    Image = "copy",
-                })
-            else
-                Rayfield:Notify({
-                    Title = "Error!",
-                    Content = "PrivateStats not found",
-                    Duration = 3,
-                    Image = "alert-circle",
-                })
-            end
-        end,
-    })
-    
-    local function updatePlayerStats()
-        local player = game.Players.LocalPlayer
-        if player:FindFirstChild("PrivateStats") then
-            local stats = player.PrivateStats
-            
-            if stats:FindFirstChild("FSAuraUnlocked") then
-                local auraValue = getSafeValue(stats.FSAuraUnlocked, "Unknown")
-                FistAuraLabel:Set("Fist Aura: " .. tostring(auraValue), "star")
-            else
-                FistAuraLabel:Set("Fist Aura: Not Available", "x")
-            end
-            
-            if stats:FindFirstChild("Tokens") then
-                local tokensValue = getSafeValue(stats.Tokens, 0)
-                TokensLabel:Set("Tokens: " .. formatNumber(tokensValue), "coins")
-            else
-                TokensLabel:Set("Tokens: Not Available", "x")
-            end
-            
-            if stats:FindFirstChild("FistStrength") then
-                local fsValue = getSafeValue(stats.FistStrength, 0)
-                FistStrengthLabel:Set("Fist Strength: " .. formatNumber(fsValue), "hand")
-            else
-                FistStrengthLabel:Set("Fist Strength: Not Available", "x")
-            end
-            
-            if stats:FindFirstChild("BodyToughness") then
-                local btValue = getSafeValue(stats.BodyToughness, 0)
-                BodyToughnessLabel:Set("Body Toughness: " .. formatNumber(btValue), "shield")
-            else
-                BodyToughnessLabel:Set("Body Toughness: Not Available", "x")
-            end
-            
-            if stats:FindFirstChild("PsychicPower") then
-                local ppValue = getSafeValue(stats.PsychicPower, 0)
-                PsychicPowerLabel:Set("Psychic Power: " .. formatNumber(ppValue), "brain")
-            else
-                PsychicPowerLabel:Set("Psychic Power: Not Available", "x")
-            end
-            
-            if stats:FindFirstChild("JumpForce") then
-                local jfValue = getSafeValue(stats.JumpForce, 0)
-                JumpForceLabel:Set("Jump Force: " .. formatNumber(jfValue), "arrow-up")
-            else
-                JumpForceLabel:Set("Jump Force: Not Available", "x")
-            end
-            
-            if stats:FindFirstChild("MovementSpeed") then
-                local msValue = getSafeValue(stats.MovementSpeed, 0)
-                MovementSpeedLabel:Set("Movement Speed: " .. formatNumber(msValue), "zap")
-            else
-                MovementSpeedLabel:Set("Movement Speed: Not Available", "x")
-            end
         else
-            FistAuraLabel:Set("Fist Aura: PrivateStats Not Found", "alert-circle")
-            TokensLabel:Set("Tokens: PrivateStats Not Found", "alert-circle")
-            FistStrengthLabel:Set("Fist Strength: PrivateStats Not Found", "alert-circle")
-            BodyToughnessLabel:Set("Body Toughness: PrivateStats Not Found", "alert-circle")
-            PsychicPowerLabel:Set("Psychic Power: PrivateStats Not Found", "alert-circle")
-            JumpForceLabel:Set("Jump Force: PrivateStats Not Found", "alert-circle")
-            MovementSpeedLabel:Set("Movement Speed: PrivateStats Not Found", "alert-circle")
+            -- Ekranı ve ScreenGui'yi kaldırarak kapat
+            if ScreenGui then
+                ScreenGui:Destroy() -- ScreenGui'yi yok et
+                ScreenGui = nil -- Referansı sıfırla
+            end
+            print("Statlar kapatıldı")
         end
-    end
-    
-    spawn(function()
-        wait(2)
-        updatePlayerStats()
-    end)
-    
-    spawn(function()
-        while true do
-            wait(5)
-            updatePlayerStats()
+    end,
+})
+
+local Button = MiscTab:CreateButton({
+    Name = "Anti AFK",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/AFK", true))()
+    end,
+})
+local Label = OtherTab:CreateLabel("Fist", 0, Color3.fromRGB(255, 255, 255), false) -- Title, Icon, Color, IgnoreTheme,
+local Button = OtherTab:CreateButton({
+    Name = "Fist100B",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/FS5", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Fist10T",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/FS6", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Fist1Qa",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/FS7", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Fist150Qa",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/FS8", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Fist15Qi",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/FS9", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Fist2.55Sx",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/FS10", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Fist1Sp",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/FS11", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Fist500Sp",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/FS12", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Fist250Oc",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/FS13", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Fist150No",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/FS14", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Fist55.5DC",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/FS15", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Fist30Ud",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/FS16", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Fist11Dd",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/FS17", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Fist4Td",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/FS18", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Fist3Qad",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/FS19", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Fist1.8Qid",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/MysteryCRB/testing/refs/heads/main/FSBoost.lua", true))()
+    end,
+})
+local Label = OtherTab:CreateLabel("Body", 0, Color3.fromRGB(255, 255, 255), false) -- Title, Icon, Color, IgnoreTheme
+local Button = OtherTab:CreateButton({
+    Name = "Body10T",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT10", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body1Qa",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT11", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body50Qa",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT12", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body450Qi",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT13", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body40Sx",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT14", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body3Sp",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT15", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body250Sp",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT16", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body20Oc",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT17", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body2No",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT18", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body200No",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT19", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body15Dc",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT20", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body1Ud",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT21", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body250Ud",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT22", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body10Dd",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT23", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body1Td",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT24", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body100Td",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT25", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body15Qad",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT26", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body2Qid",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT27", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Body250Qid",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/BT28", true))()
+    end,
+})
+local Label = OtherTab:CreateLabel("Psychic", 0, Color3.fromRGB(255, 255, 255), false) -- Title, Icon, Color, IgnoreTheme
+local Button = OtherTab:CreateButton({
+    Name = "Psy1Qa",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/PS6", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Psy333Qa",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/PS7", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Psy111Qi",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/PS8", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Psy33.3Sx",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/PS9", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Psy11.1Sp",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/PS10", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Psy3.36Oc",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/PS11", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Psy1.1No",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/PS12", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Psy444No",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/PS13", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Psy111Dc",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/PS14", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Psy55.5Ud",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/PS15", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Psy22.2Dd",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/PS16", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Psy7.7Td",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/PS17", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Psy3.3Qad",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/MysteryCRB/testing/refs/heads/main/PS18.lua", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Psy1.1Qid",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/PS19", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Psy444Qid",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/MysteryCRB/testing/refs/heads/main/PS20.lua", true))()
+    end,
+})
+local Button = OtherTab:CreateButton({
+    Name = "Psy133Spd Boost",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/MysteryCRB/testing/refs/heads/main/Boost.lua", true))()
+    end,
+})
+local Label = OtherTab:CreateLabel("MSJF", 0, Color3.fromRGB(255, 255, 255), false) -- Title, Icon, Color, IgnoreTheme
+local Dropdown = OtherTab:CreateDropdown({
+    Name = "MSJF",
+    Options = {"10Td", "10Dc", "10No", "10Oc", "10Sp", "100Sx"},
+    CurrentOption = {""}, -- Başlangıçta seçili olan seçenek
+    MultipleOptions = false, -- Birden fazla seçeneği aynı anda seçebilmek için
+    Flag = "Dropdown1",
+    Callback = function(Options)
+        -- Seçili tüm seçenekleri ekrana yazdır (debug amaçlı)
+        print("Seçili seçenekler: ", table.concat(Options, ", "))
+        -- Eğer "10Td" seçildiyse scripti çalıştır
+        if table.find(Options, "10Td") then
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/MS23", true))()
         end
-    end)
-    
-    local SettingsTab = Window:CreateTab("Settings", "settings")
-    
-    local UISection = SettingsTab:CreateSection("Interface Settings")
-    
-    local UIToggleKeybind = SettingsTab:CreateKeybind({
-        Name = "Toggle UI Keybind",
-        CurrentKeybind = "K",
-        HoldToInteract = false,
-        Flag = "UIKeybind",
-        Callback = function(Keybind)
-        end,
-    })
-    
-    local ThemeSection = SettingsTab:CreateSection("Theme Settings")
-    
-    local ThemeDropdown = SettingsTab:CreateDropdown({
-        Name = "UI Theme",
-        Options = {"Type Hub Custom", "Default", "Ocean", "Serenity", "Amethyst"},
-        CurrentOption = {"Type Hub Custom"},
-        MultipleOptions = false,
-        Flag = "Theme",
-        Callback = function(Options)
-            if Options[1] == "Type Hub Custom" then
-                Window.ModifyTheme(TypeHubTheme)
-            else
-                Window.ModifyTheme(Options[1])
-            end
-        end,
-    })
-    
-    local ConfigSection = SettingsTab:CreateSection("Configuration")
-    
-    local SaveConfigButton = SettingsTab:CreateButton({
-        Name = "Save Configuration",
-        Callback = function()
-            Rayfield:SaveConfiguration()
-            Rayfield:Notify({
-                Title = "Configuration Saved!",
-                Content = "Your settings have been saved successfully",
-                Duration = 3,
-                Image = "save",
-            })
-        end,
-    })
-    
-    local DiscordTab = Window:CreateTab("Discord", "message-circle")
-    
-    local CommunitySection = DiscordTab:CreateSection("Join Our Community")
-    
-    local DiscordParagraph = DiscordTab:CreateParagraph({
-        Title = "Type Hub Discord Server",
-        Content = "Join our Discord server to get the latest updates, report bugs, request features, and chat with other users. Our community is active and always ready to help!"
-    })
-    
-    local CopyDiscordButton = DiscordTab:CreateButton({
-        Name = "Copy Discord Link",
-        Callback = function()
-            setclipboard("https://discord.gg/C9WZFX66")
-            Rayfield:Notify({
-                Title = "Link Copied!",
-                Content = "Discord invite link copied to clipboard",
-                Duration = 3,
-                Image = "copy",
-            })
-        end,
-    })
-    
-    local FeaturesSection = DiscordTab:CreateSection("Discord Features")
-    
-    local DiscordLabel1 = DiscordTab:CreateLabel("Active Community Chat", "message-square")
-    local DiscordLabel2 = DiscordTab:CreateLabel("Update Notifications", "bell")
-    local DiscordLabel3 = DiscordTab:CreateLabel("Bug Reports & Support", "bug")
-    local DiscordLabel4 = DiscordTab:CreateLabel("Feature Requests", "lightbulb")
-    local DiscordLabel5 = DiscordTab:CreateLabel("Exclusive Content", "gift")
-    
-    spawn(function()
-        while true do
-            wait(0.05)
-            
-            if SpherePunchSpamming then
-                local targetPosition = getMousePosition()
-                local args = {
-                    {
-                        "Skill_SpherePunch",
-                        targetPosition
-                    }
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            end
+        -- Eğer "10Dc" seçildiyse scripti çalıştır
+        if table.find(Options, "10Dc") then
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/MS22", true))()
         end
-    end)
-    
-    spawn(function()
-        local isRightPunch = true
-        while true do
-            wait(0.03)
-            
-            if BulletPunchSpamming then
-                local targetPosition = getMousePosition()
-                
-                if isRightPunch then
-                    local args = {
-                        {
-                            "Skill_BulletPunch",
-                            "Right",
-                            777.06396484375,
-                            Vector3.new(targetPosition.X, targetPosition.Y, targetPosition.Z)
-                        }
-                    }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                else
-                    local args = {
-                        {
-                            "Skill_BulletPunch",
-                            "Left",
-                            9948.283203125,
-                            Vector3.new(targetPosition.X, targetPosition.Y, targetPosition.Z)
-                        }
-                    }
-                    game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-                end
-                
-                isRightPunch = not isRightPunch
-            end
+        -- Eğer "10No" seçildiyse scripti çalıştır
+        if table.find(Options, "10No") then
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/MS21", true))()
         end
-    end)
-    
-    spawn(function()
-        while true do
-            wait(0.15)
-            
-            if WindSliceSpamming then
-                local targetPosition = getMousePosition()
-                local args = {
-                    {
-                        "Skill_WindSlice",
-                        Vector3.new(targetPosition.X, targetPosition.Y, targetPosition.Z)
-                    }
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            end
+        -- Eğer "10Oc" seçildiyse scripti çalıştır
+        if table.find(Options, "10Oc") then
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/MS20", true))()
         end
-    end)
-    
-    spawn(function()
-        while true do
-            wait(0.1)
-            
-            if AutoFarmBT then
-                local args = {
-                    {
-                        "+BT" .. BTLevel
-                    }
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            end
-            
-            if AutoFarmFS then
-                local args = {
-                    {
-                        "+FS" .. FSLevel
-                    }
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            end
-            
-            if AutoFarmPP then
-                local args = {
-                    {
-                        "+PP" .. PPLevel
-                    }
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            end
-            
-            if AutoFarmJF then
-                local args = {
-                    {
-                        "+JF" .. JFLevel
-                    }
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            end
-            
-            if AutoFarmMS then
-                local args = {
-                    {
-                        "+MS" .. MSLevel
-                    }
-                }
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteEvent"):FireServer(unpack(args))
-            end
+        -- Eğer "10Sp" seçildiyse scripti çalıştır
+        if table.find(Options, "10Sp") then
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/MS19", true))()
         end
-    end)
-    
-    Rayfield:LoadConfiguration()
-    
-end)()
+        -- Eğer "100Sx" seçildiyse scripti çalıştır
+        if table.find(Options, "100Sx") then
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/massthix/testttt/refs/heads/main/MS18", true))()
+        end
+    end,
+})
